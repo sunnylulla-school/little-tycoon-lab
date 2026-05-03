@@ -97,12 +97,39 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
       return decisionsOk && perDecText && checks;
     }
     if (p === "step2") {
-      const revOk =
-        scenario.productType === "single"
-          ? isNumComplete(get(stage, "step2", "qty"))
-          : isNumComplete(get(stage, "step2", "qty_b")) && isNumComplete(get(stage, "step2", "qty_c"));
-      const checks = skipChecks || [0, 1, 2, 3].every((i) => get(stage, "step2", `chk_${i}`) === "1");
-      return revOk && checks;
+      if (!scenario) return false;
+      const decMap = Object.fromEntries(
+        scenario.decisions.map((d: any) => [d.id, get(stage, "step1", d.id)])
+      ) as Record<string, "A" | "B" | "C">;
+      const allDecMade = scenario.decisions.every((d: any) => get(stage, "step1", d.id));
+      if (!allDecMade) return false;
+      const outcome = calcOutcome(scenario, decMap);
+      const tCost = totalCost(scenario);
+
+      const revenueCorrect =
+        (get(stage, "step2", "revenue_answer") || "") !== "" &&
+        parseFloat(get(stage, "step2", "revenue_answer") || "") === outcome.revenue;
+
+      const costEntryOk = (scenario.costItems as any[]).every((item: any, i: number) => {
+        const nameOk = (get(stage, "step2", `cost_name_${i}`) || "").trim().length > 0;
+        const amtOk = parseFloat(get(stage, "step2", `cost_amt_${i}`) || "") === item.amount;
+        return nameOk && amtOk;
+      });
+
+      const totalCostCorrect =
+        (get(stage, "step2", "total_cost_answer") || "") !== "" &&
+        parseFloat(get(stage, "step2", "total_cost_answer") || "") === tCost;
+
+      const correctProfit = outcome.revenue - tCost;
+      const profitCorrect =
+        (get(stage, "step2", "profit_answer") || "") !== "" &&
+        parseFloat(get(stage, "step2", "profit_answer") || "") === correctProfit;
+
+      const checks =
+        stage === 1 ||
+        [0, 1, 2, 3].every((i) => get(stage, "step2", `chk_${i}`) === "1");
+
+      return revenueCorrect && costEntryOk && totalCostCorrect && profitCorrect && checks;
     }
     if (p === "step3") {
       const p1 = isSelectComplete(get(stage, "step3", "p1")) && isTextComplete(get(stage, "step3", "p1_text"));
