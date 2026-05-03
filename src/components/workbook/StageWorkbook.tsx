@@ -317,16 +317,17 @@ function IntroPage({ stage, get, setValue, onContinue }: any) {
 
 function PickPage({ stage, get, setValue }: any) {
   const selected = get(stage, "pick", "scenario");
+  const options = SCENARIOS.filter((s) => s.id !== 1);
   return (
     <div>
       <StepBar step={0} title="Pick Your Scenario" />
       <p className="body-text mb-4">
-        You are going to run one of four simulated business scenarios. Each one asks you to make real decisions — where to
-        set up, how much to make, whether to offer a deal. Your decisions affect your results. Pick one. You will use this
-        same scenario for all of Stage 1.
+        You are going to run one of three simulated business scenarios. Each one asks you to make
+        real decisions — where to set up, how much to make, whether to offer a deal. Your decisions
+        affect your results. Pick one. You will use this same scenario for all of Stage 1.
       </p>
       <div className="grid sm:grid-cols-2 gap-3 mt-4">
-        {SCENARIOS.map((s) => {
+        {options.map((s, idx) => {
           const isSel = String(s.id) === selected;
           return (
             <button
@@ -336,14 +337,14 @@ function PickPage({ stage, get, setValue }: any) {
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="overline">SCENARIO {s.id}</div>
+                  <div className="overline">OPTION {idx + 1}</div>
                   <div className="text-[18px] font-bold text-navy mt-1">{s.name}</div>
                   <div className="text-[13px] text-muted-foreground mt-1">{s.short}</div>
                   <div className="text-[12px] mt-2 text-[#222]">{s.setup}</div>
                 </div>
               </div>
               <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                <SpeakButton text={`Scenario ${s.id}. ${s.name}. ${s.setup}`} />
+                <SpeakButton text={`Option ${idx + 1}. ${s.name}. ${s.setup}`} />
               </div>
             </button>
           );
