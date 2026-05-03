@@ -71,7 +71,10 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
 
   if (!loaded) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
-  const scenario = scenarioId ? getScenario(scenarioId) : null;
+  // Stage 1 uses the student's pick on Step 0; Stage 2/3 use the auto-assigned scenario.
+  const pickedId = parseInt(get(stage, "pick", "scenario") || "0", 10);
+  const effectiveScenarioId = stage === 1 ? (pickedId || null) : scenarioId;
+  const scenario = effectiveScenarioId ? getScenario(effectiveScenarioId) : null;
 
   // Page completion logic
   const pageComplete = (p: string): boolean => {
