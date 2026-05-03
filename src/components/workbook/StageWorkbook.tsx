@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAssignment, useProgress, useUnlocks } from "@/hooks/useProgress";
-import { SCENARIOS, getScenario, totalCost, PRINCIPLES, Scenario, calcOutcome, CAR_WASH_PRICES } from "@/lib/scenarios";
+import { SCENARIOS, getScenario, totalCost, PRINCIPLES, Scenario, calcOutcome } from "@/lib/scenarios";
 import { isNumComplete, isSelectComplete, isTextComplete } from "@/lib/validators";
 import { GUIDE_PIN } from "@/config";
 import {
