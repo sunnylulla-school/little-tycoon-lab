@@ -536,10 +536,7 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
   const allMade2 = scenario.decisions.every((d: any) => get(stage, "step1", d.id));
   const prefilledOutcome = allMade2 ? calcOutcome(scenario, decisionMap2) : null;
 
-  const singlePrice =
-    scenario.id === 3
-      ? (CAR_WASH_PRICES as any)[decisionMap2.d3] ?? 5
-      : scenario.pricePerItem || 0;
+  const singlePrice = scenario.pricePerItem || 0;
 
   const revenueAnswer = get(stage, "step2", "revenue_answer") || "";
   const correctRevenue = prefilledOutcome?.revenue ?? 0;
