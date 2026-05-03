@@ -435,7 +435,18 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
 
       {allDecisionsMade && outcome ? (
         <div className="mt-6 border-2 border-gold rounded-md p-4 bg-white">
-          <div className="overline mb-2">YOUR RESULTS</div>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="overline">YOUR RESULTS</div>
+            {outcome && (
+              <SpeakButton
+                text={
+                  outcome.type === "single"
+                    ? `Your results are in. You sold ${outcome.unitsSold} ${scenario.unitLabel}. Based on your decisions. Head to the Math step to calculate your revenue, cost, and profit.`
+                    : `Your results are in. You sold ${outcome.bookmarksSold} bookmarks and ${outcome.cardsSold} cards. Head to the Math step to calculate your revenue, cost, and profit.`
+                }
+              />
+            )}
+          </div>
           <div className="text-[15px] text-[#222]">
             {outcome.type === "single" ? (
               <div>
