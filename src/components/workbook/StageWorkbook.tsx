@@ -420,18 +420,39 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
         })}
       </div>
 
-      <TextField
-        label={
-          scenario.id === 4
-            ? "MY RESULTS — How many bookmarks and how many cards did I sell?"
-            : "MY RESULTS — How many did I sell?"
-        }
-        rows={2}
-        value={get(stage, "step1", "results_text")}
-        onChange={(v) => setValue(stage, "step1", "results_text", v, { debounce: true })}
-        onBlur={() => flush(stage, "step1", "results_text")}
-      />
-    </div>
+      {allDecisionsMade && outcome ? (
+        <div className="mt-6 border-2 border-gold rounded-md p-4 bg-white">
+          <div className="overline mb-2">YOUR RESULTS</div>
+          <div className="text-[15px] text-[#222]">
+            {outcome.type === "single" ? (
+              <div>
+                <div className="font-bold text-navy text-[18px] mb-1">
+                  You sold {outcome.unitsSold} {scenario.unitLabel}.
+                </div>
+                <div className="text-[14px] text-muted-foreground">
+                  Based on your decisions, {outcome.unitsSold} {scenario.unitLabel} sold at ${outcome.price} each.
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="font-bold text-navy text-[18px] mb-1">
+                  You sold {outcome.bookmarksSold} bookmarks and {outcome.cardsSold} cards.
+                </div>
+                <div className="text-[14px] text-muted-foreground">
+                  Based on your decisions and your display choices.
+                </div>
+              </div>
+            )}
+            <div className="mt-3 text-[13px] text-navy font-bold">
+              Head to the Math step to calculate your revenue, cost, and profit.
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 text-[13px] text-muted-foreground italic">
+          Make all three decisions above to see your results.
+        </div>
+      )}
   );
 }
 
