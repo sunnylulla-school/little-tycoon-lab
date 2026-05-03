@@ -559,12 +559,9 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
   const profitCorrect = correctProfit !== null && profitAnswer !== "" && parseFloat(profitAnswer) === correctProfit;
   const [profitAttempted, setProfitAttempted] = useState(false);
 
-  const revenueQuestionText =
-    prefilledOutcome?.type === "single"
-      ? `You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use your calculator to multiply those two numbers. What is your total revenue?`
-      : prefilledOutcome?.type === "dual"
-      ? `You sold ${(prefilledOutcome as any).bookmarksSold} bookmarks at $1 each and ${(prefilledOutcome as any).cardsSold} cards at $2 each. Use your calculator to work out the total. What is your total revenue?`
-      : "Complete Step 1 first to see your sales numbers.";
+  const revenueQuestionText = prefilledOutcome
+    ? `You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use your calculator to multiply those two numbers. What is your total revenue?`
+    : "Complete Step 1 first to see your sales numbers.";
 
   return (
     <div>
