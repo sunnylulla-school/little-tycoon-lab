@@ -764,7 +764,7 @@ function StageFooter({ stage, stageComplete, scenario, get, setValue, unlock, as
   if (!stageComplete || !scenario) {
     return (
       <div className="mt-10 text-center text-[13px] text-muted-foreground">
-        Almost there — fill in every field and tick all the checkboxes to unlock guide sign-off.
+        Almost there — fill in every section to unlock guide sign-off.
       </div>
     );
   }
