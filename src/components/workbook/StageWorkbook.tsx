@@ -70,6 +70,12 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
   const [pageIdx, setPageIdx] = useState(0);
   const page = pages[pageIdx];
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  }, [pageIdx]);
+
   if (!loaded) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
   // Stage 1 uses the student's pick on Step 0; Stage 2/3 use the auto-assigned scenario.
