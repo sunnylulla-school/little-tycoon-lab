@@ -465,36 +465,17 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
         <div className="mt-6 border-2 border-gold rounded-md p-4 bg-white">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="overline">YOUR RESULTS</div>
-            {outcome && (
-              <SpeakButton
-                text={
-                  outcome.type === "single"
-                    ? `Your results are in. You sold ${outcome.unitsSold} ${scenario.unitLabel}. Based on your decisions. Head to the Math step to calculate your revenue, cost, and profit.`
-                    : `Your results are in. You sold ${outcome.bookmarksSold} bookmarks and ${outcome.cardsSold} cards. Head to the Math step to calculate your revenue, cost, and profit.`
-                }
-              />
-            )}
+            <SpeakButton
+              text={`Your results are in. You sold ${outcome.unitsSold} ${scenario.unitLabel}. Based on your decisions, ${outcome.unitsSold} ${scenario.unitLabel} sold at $${outcome.price} each. Head to the Math step to calculate your revenue, cost, and profit.`}
+            />
           </div>
           <div className="text-[15px] text-[#222]">
-            {outcome.type === "single" ? (
-              <div>
-                <div className="font-bold text-navy text-[18px] mb-1">
-                  You sold {outcome.unitsSold} {scenario.unitLabel}.
-                </div>
-                <div className="text-[14px] text-muted-foreground">
-                  Based on your decisions, {outcome.unitsSold} {scenario.unitLabel} sold at ${outcome.price} each.
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="font-bold text-navy text-[18px] mb-1">
-                  You sold {outcome.bookmarksSold} bookmarks and {outcome.cardsSold} cards.
-                </div>
-                <div className="text-[14px] text-muted-foreground">
-                  Based on your decisions and your display choices.
-                </div>
-              </div>
-            )}
+            <div className="font-bold text-navy text-[18px] mb-1">
+              You sold {outcome.unitsSold} {scenario.unitLabel}.
+            </div>
+            <div className="text-[14px] text-muted-foreground">
+              Based on your decisions, {outcome.unitsSold} {scenario.unitLabel} sold at ${outcome.price} each.
+            </div>
             <div className="mt-3 text-[13px] text-navy font-bold">
               Head to the Math step to calculate your revenue, cost, and profit.
             </div>
