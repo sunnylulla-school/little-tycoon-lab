@@ -18,6 +18,7 @@ import {
   SidebarBox,
   StepBar,
 } from "./Primitives";
+import { SpeakButton } from "@/components/SpeakButton";
 import { Button } from "@/components/ui/button";
 import { GuideSignOffModal } from "@/components/GuideSignOffModal";
 import { supabase } from "@/integrations/supabase/client";
