@@ -122,11 +122,11 @@
     color: hsl(var(--gold));
   }
   .example-name {
-    @apply text-[13px] font-bold;
+    @apply text-[15px] font-bold;
     color: #222;
   }
   .example-content {
-    @apply text-[13px] italic leading-relaxed;
+    @apply text-[15px] leading-relaxed;
     color: #222;
   }
   .now-you-try {
