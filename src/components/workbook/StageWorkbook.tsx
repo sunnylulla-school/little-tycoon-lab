@@ -294,22 +294,30 @@ function PickPage({ stage, get, setValue }: any) {
     <div>
       <StepBar step={0} title="Pick Your Scenario" />
       <p className="body-text mb-4">
-        You are going to run one of three simulated business scenarios. Each one asks you to make real decisions — where to
+        You are going to run one of four simulated business scenarios. Each one asks you to make real decisions — where to
         set up, how much to make, whether to offer a deal. Your decisions affect your results. Pick one. You will use this
         same scenario for all of Stage 1.
       </p>
       <div className="grid sm:grid-cols-2 gap-3 mt-4">
-        {SCENARIOS.filter((s) => s.id !== 1).map((s) => {
+        {SCENARIOS.map((s) => {
           const isSel = String(s.id) === selected;
           return (
             <button
               key={s.id}
-              className={`scenario-card ${isSel ? "scenario-card-selected" : ""}`}
+              className={`scenario-card text-left ${isSel ? "scenario-card-selected" : ""}`}
               onClick={() => setValue(stage, "pick", "scenario", String(s.id))}
             >
-              <div className="overline">SCENARIO {s.id}</div>
-              <div className="text-[18px] font-bold text-navy mt-1">{s.name}</div>
-              <div className="text-[13px] text-muted-foreground mt-1">{s.short}</div>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="overline">SCENARIO {s.id}</div>
+                  <div className="text-[18px] font-bold text-navy mt-1">{s.name}</div>
+                  <div className="text-[13px] text-muted-foreground mt-1">{s.short}</div>
+                  <div className="text-[12px] mt-2 text-[#222]">{s.setup}</div>
+                </div>
+              </div>
+              <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                <SpeakButton text={`Scenario ${s.id}. ${s.name}. ${s.setup}`} />
+              </div>
             </button>
           );
         })}
@@ -319,9 +327,13 @@ function PickPage({ stage, get, setValue }: any) {
 }
 
 function ScenarioSetup({ scenario }: { scenario: Scenario }) {
+  const speakText = `Scenario ${scenario.id}: ${scenario.name}. ${scenario.setup}`;
   return (
     <div className="border rounded-md p-4 bg-white mb-4">
-      <div className="overline">SCENARIO {scenario.id}: {scenario.name.toUpperCase()}</div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="overline">SCENARIO {scenario.id}: {scenario.name.toUpperCase()}</div>
+        <SpeakButton text={speakText} />
+      </div>
       <p className="body-text mt-2">{scenario.setup}</p>
     </div>
   );
