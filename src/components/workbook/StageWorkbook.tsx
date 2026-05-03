@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAssignment, useProgress, useUnlocks } from "@/hooks/useProgress";
-import { SCENARIOS, getScenario, totalCost, PRINCIPLES, Scenario, calcOutcome, CAR_WASH_PRICES } from "@/lib/scenarios";
+import { SCENARIOS, getScenario, totalCost, PRINCIPLES, Scenario, calcOutcome } from "@/lib/scenarios";
 import { isNumComplete, isSelectComplete, isTextComplete } from "@/lib/validators";
 import { GUIDE_PIN } from "@/config";
 import {
@@ -60,8 +60,8 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
           .eq("student_id", student.id);
         (atts || []).forEach((a: any) => used.add(a.scenario_id));
       }
-      const remaining = SCENARIOS.filter((s) => !used.has(s.id));
-      const pool = remaining.length > 0 ? remaining : SCENARIOS;
+      const remaining = SCENARIOS.filter((s) => s.id !== 1 && !used.has(s.id));
+      const pool = remaining.length > 0 ? remaining : SCENARIOS.filter((s) => s.id !== 1);
       const pick = pool[Math.floor(Math.random() * pool.length)];
       await assign(pick.id);
     })();
@@ -317,16 +317,17 @@ function IntroPage({ stage, get, setValue, onContinue }: any) {
 
 function PickPage({ stage, get, setValue }: any) {
   const selected = get(stage, "pick", "scenario");
+  const options = SCENARIOS.filter((s) => s.id !== 1);
   return (
     <div>
       <StepBar step={0} title="Pick Your Scenario" />
       <p className="body-text mb-4">
-        You are going to run one of four simulated business scenarios. Each one asks you to make real decisions — where to
-        set up, how much to make, whether to offer a deal. Your decisions affect your results. Pick one. You will use this
-        same scenario for all of Stage 1.
+        You are going to run one of three simulated business scenarios. Each one asks you to make
+        real decisions — where to set up, how much to make, whether to offer a deal. Your decisions
+        affect your results. Pick one. You will use this same scenario for all of Stage 1.
       </p>
       <div className="grid sm:grid-cols-2 gap-3 mt-4">
-        {SCENARIOS.map((s) => {
+        {options.map((s, idx) => {
           const isSel = String(s.id) === selected;
           return (
             <button
@@ -336,14 +337,14 @@ function PickPage({ stage, get, setValue }: any) {
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="overline">SCENARIO {s.id}</div>
+                  <div className="overline">OPTION {idx + 1}</div>
                   <div className="text-[18px] font-bold text-navy mt-1">{s.name}</div>
                   <div className="text-[13px] text-muted-foreground mt-1">{s.short}</div>
                   <div className="text-[12px] mt-2 text-[#222]">{s.setup}</div>
                 </div>
               </div>
               <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                <SpeakButton text={`Scenario ${s.id}. ${s.name}. ${s.setup}`} />
+                <SpeakButton text={`Option ${idx + 1}. ${s.name}. ${s.setup}`} />
               </div>
             </button>
           );
@@ -464,36 +465,17 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
         <div className="mt-6 border-2 border-gold rounded-md p-4 bg-white">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="overline">YOUR RESULTS</div>
-            {outcome && (
-              <SpeakButton
-                text={
-                  outcome.type === "single"
-                    ? `Your results are in. You sold ${outcome.unitsSold} ${scenario.unitLabel}. Based on your decisions. Head to the Math step to calculate your revenue, cost, and profit.`
-                    : `Your results are in. You sold ${outcome.bookmarksSold} bookmarks and ${outcome.cardsSold} cards. Head to the Math step to calculate your revenue, cost, and profit.`
-                }
-              />
-            )}
+            <SpeakButton
+              text={`Your results are in. You sold ${outcome.unitsSold} ${scenario.unitLabel}. Based on your decisions, ${outcome.unitsSold} ${scenario.unitLabel} sold at $${outcome.price} each. Head to the Math step to calculate your revenue, cost, and profit.`}
+            />
           </div>
           <div className="text-[15px] text-[#222]">
-            {outcome.type === "single" ? (
-              <div>
-                <div className="font-bold text-navy text-[18px] mb-1">
-                  You sold {outcome.unitsSold} {scenario.unitLabel}.
-                </div>
-                <div className="text-[14px] text-muted-foreground">
-                  Based on your decisions, {outcome.unitsSold} {scenario.unitLabel} sold at ${outcome.price} each.
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="font-bold text-navy text-[18px] mb-1">
-                  You sold {outcome.bookmarksSold} bookmarks and {outcome.cardsSold} cards.
-                </div>
-                <div className="text-[14px] text-muted-foreground">
-                  Based on your decisions and your display choices.
-                </div>
-              </div>
-            )}
+            <div className="font-bold text-navy text-[18px] mb-1">
+              You sold {outcome.unitsSold} {scenario.unitLabel}.
+            </div>
+            <div className="text-[14px] text-muted-foreground">
+              Based on your decisions, {outcome.unitsSold} {scenario.unitLabel} sold at ${outcome.price} each.
+            </div>
             <div className="mt-3 text-[13px] text-navy font-bold">
               Head to the Math step to calculate your revenue, cost, and profit.
             </div>
@@ -554,10 +536,7 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
   const allMade2 = scenario.decisions.every((d: any) => get(stage, "step1", d.id));
   const prefilledOutcome = allMade2 ? calcOutcome(scenario, decisionMap2) : null;
 
-  const singlePrice =
-    scenario.id === 3
-      ? (CAR_WASH_PRICES as any)[decisionMap2.d3] ?? 5
-      : scenario.pricePerItem || 0;
+  const singlePrice = scenario.pricePerItem || 0;
 
   const revenueAnswer = get(stage, "step2", "revenue_answer") || "";
   const correctRevenue = prefilledOutcome?.revenue ?? 0;
@@ -580,12 +559,9 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
   const profitCorrect = correctProfit !== null && profitAnswer !== "" && parseFloat(profitAnswer) === correctProfit;
   const [profitAttempted, setProfitAttempted] = useState(false);
 
-  const revenueQuestionText =
-    prefilledOutcome?.type === "single"
-      ? `You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use your calculator to multiply those two numbers. What is your total revenue?`
-      : prefilledOutcome?.type === "dual"
-      ? `You sold ${(prefilledOutcome as any).bookmarksSold} bookmarks at $1 each and ${(prefilledOutcome as any).cardsSold} cards at $2 each. Use your calculator to work out the total. What is your total revenue?`
-      : "Complete Step 1 first to see your sales numbers.";
+  const revenueQuestionText = prefilledOutcome
+    ? `You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use your calculator to multiply those two numbers. What is your total revenue?`
+    : "Complete Step 1 first to see your sales numbers.";
 
   return (
     <div>
@@ -603,22 +579,12 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
               YOUR RESULTS FROM STEP 1
             </div>
             <SpeakButton
-              text={
-                prefilledOutcome.type === "single"
-                  ? `Your results from Step 1. You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use these numbers in the revenue calculation below.`
-                  : `Your results from Step 1. You sold ${(prefilledOutcome as any).bookmarksSold} bookmarks and ${(prefilledOutcome as any).cardsSold} cards. Use these numbers in the revenue calculation below.`
-              }
+              text={`Your results from Step 1. You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use these numbers in the revenue calculation below.`}
             />
           </div>
-          {prefilledOutcome.type === "single" ? (
-            <p className="text-[13px] font-bold text-[#1E2459]">
-              You sold {prefilledOutcome.unitsSold} {scenario.unitLabel} at ${singlePrice} each.
-            </p>
-          ) : (
-            <p className="text-[13px] font-bold text-[#1E2459]">
-              You sold {(prefilledOutcome as any).bookmarksSold} bookmarks and {(prefilledOutcome as any).cardsSold} cards.
-            </p>
-          )}
+          <p className="text-[13px] font-bold text-[#1E2459]">
+            You sold {prefilledOutcome.unitsSold} {scenario.unitLabel} at ${singlePrice} each.
+          </p>
           <p className="text-[12px] text-muted-foreground mt-1">
             Use these numbers in the revenue calculation below.
           </p>
@@ -1175,9 +1141,11 @@ function StageFooter({ stage, stageComplete, scenario, get, setValue, unlock, as
           intro={`Your guide needs to review your work and enter the PIN to unlock Stage ${stage + 1}.`}
           summary={summary}
           checklist={[
-            "Math is complete and correct",
-            "Strategy names a specific decision and explains profit impact — not just \"do better\"",
-            "Both principles are explained in the student's own words",
+            "Math: Revenue, Cost, and Profit are all marked Correct above",
+            "Strategy: names a specific decision — not just 'do better'",
+            "Strategy: explains exactly how the change would affect profit",
+            "Principle 1: explained in student's own words — not a copied definition",
+            "Principle 2: explained in student's own words — not a copied definition",
           ]}
           onPass={async () => {
             await unlock(stage + 1);
@@ -1202,25 +1170,35 @@ function StageFooter({ stage, stageComplete, scenario, get, setValue, unlock, as
         open={openSign}
         onOpenChange={setOpenSign}
         title="Guide Sign-Off — Stage 3 Demonstration"
-        intro="Review the student's work below, ask the four questions out loud, then complete the checklist."
+        intro="Ask all four questions out loud first. Then review the student's written work. Then complete the checklist and enter the PIN."
         summary={
           <>
+            <div className="border rounded-md p-3 bg-white mb-3">
+              <div className="font-bold text-navy mb-2">
+                STEP 1 — ASK THESE FOUR QUESTIONS OUT LOUD
+              </div>
+              <div className="text-[12px] text-muted-foreground mb-2">
+                Listen for real thinking. The student should answer without reading from the screen.
+              </div>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Walk me through how you figured out your profit.</li>
+                <li>What was one decision you made and why did you make it?</li>
+                <li>If you ran this scenario again, what is one thing you would change and how would it affect your profit?</li>
+                <li>Pick one principle you wrote down and tell me how you actually used it — not what it means, what you did.</li>
+              </ol>
+            </div>
+            <div className="font-bold text-navy mb-2">
+              STEP 2 — REVIEW WRITTEN WORK
+            </div>
             {summary}
-            <hr className="gold-rule my-3" />
-            <div className="font-bold text-navy">ASK THESE QUESTIONS OUT LOUD — listen for real thinking, not memorized answers.</div>
-            <ol className="list-decimal pl-5 mt-2 space-y-1">
-              <li>Walk me through how you figured out your profit.</li>
-              <li>What was one decision you made and why did you make it?</li>
-              <li>If you ran this scenario again, what is one thing you would change and how would it affect your profit?</li>
-              <li>Pick one principle you wrote down and tell me how you actually used it — not what it means, what you did.</li>
-            </ol>
           </>
         }
         checklist={[
-          "Math is correct — revenue, cost, and profit calculations are right",
-          "Strategy names a specific decision and explains how it would affect profit — not just \"do better\"",
-          "Two principles are named and explained in the student's own words — not copied definitions",
-          "Student answered all four conversation questions out loud without reading from the screen",
+          "Math: Revenue, Cost, and Profit are all marked Correct above",
+          "Strategy: names a specific decision and explains profit impact — not just 'do better'",
+          "Principle 1: explained in student's own words — not a copied definition",
+          "Principle 2: explained in student's own words — not a copied definition",
+          "Student answered all four questions out loud without reading from the screen",
         ]}
         showFail
         onPass={async () => {
@@ -1325,19 +1303,72 @@ function buildSummary(stage: number, scenario: Scenario, get: any) {
   const allMade = scenario.decisions.every((d) => get(stage, "step1", d.id));
   const outcome = allMade ? calcOutcome(scenario, decisionMap) : null;
 
-  let revenue = 0;
-  if (outcome?.type === "single") revenue = outcome.revenue;
-  else if (outcome?.type === "dual") revenue = outcome.revenue;
-  const profit = revenue - tCost;
+  const storedRevAnswer = parseFloat(get(stage, "step2", "revenue_answer") || "NaN");
+  const storedCostAnswer = parseFloat(get(stage, "step2", "total_cost_answer") || "NaN");
+  const storedProfitAnswer = parseFloat(get(stage, "step2", "profit_answer") || "NaN");
+
+  const correctRevenue = outcome?.revenue ?? 0;
+  const revenueOk = !isNaN(storedRevAnswer) && storedRevAnswer === correctRevenue;
+  const costOk = !isNaN(storedCostAnswer) && storedCostAnswer === tCost;
+  const profitOk = !isNaN(storedProfitAnswer) && outcome
+    ? storedProfitAnswer === outcome.revenue - tCost
+    : false;
+
+  const checkMark = (ok: boolean) => (
+    <span className={`font-bold ${ok ? "text-[hsl(var(--success))]" : "text-red-600"}`}>
+      {ok ? "✓ Correct" : "✗ Incorrect"}
+    </span>
+  );
 
   return (
-    <div className="space-y-3 text-[13px]">
-      <div>
-        <span className="font-bold">Scenario:</span> {scenario.name}
+    <div className="space-y-4 text-[13px]">
+      <div className="font-bold text-navy">
+        Scenario: {scenario.name}
       </div>
 
-      <div>
-        <div className="font-bold mb-1">Decisions Made:</div>
+      {/* Math -- auto-verified */}
+      <div className="border rounded-md p-3 bg-white">
+        <div className="font-bold text-navy mb-2">
+          MATH — Auto-Verified by System
+        </div>
+        <div className="space-y-2">
+          <div>
+            <div>
+              Revenue: {outcome ? `${outcome.unitsSold} × $${outcome.price}` : "—"} ={" "}
+              <span className="font-bold">${correctRevenue}</span>
+            </div>
+            <div className="flex gap-2 text-[12px]">
+              <span>Student typed: ${isNaN(storedRevAnswer) ? "—" : storedRevAnswer}</span>
+              {checkMark(revenueOk)}
+            </div>
+          </div>
+          <div>
+            <div>
+              Total Cost = <span className="font-bold">${tCost}</span>
+            </div>
+            <div className="flex gap-2 text-[12px]">
+              <span>Student typed: ${isNaN(storedCostAnswer) ? "—" : storedCostAnswer}</span>
+              {checkMark(costOk)}
+            </div>
+          </div>
+          <div>
+            <div>
+              Profit = ${correctRevenue} − ${tCost} ={" "}
+              <span className="font-bold">${outcome ? outcome.revenue - tCost : 0}</span>
+            </div>
+            <div className="flex gap-2 text-[12px]">
+              <span>Student typed: ${isNaN(storedProfitAnswer) ? "—" : storedProfitAnswer}</span>
+              {checkMark(profitOk)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Decisions */}
+      <div className="border rounded-md p-3 bg-white">
+        <div className="font-bold text-navy mb-2">
+          DECISIONS AND REASONING
+        </div>
         {scenario.decisions.map((d) => {
           const chosenKey = get(stage, "step1", d.id);
           const chosenOption = d.options.find((o) => o.key === chosenKey);
@@ -1346,56 +1377,56 @@ function buildSummary(stage: number, scenario: Scenario, get: any) {
             <div key={d.id} className="ml-2 mb-2">
               <div className="font-semibold">{d.question}</div>
               <div>Chose: {chosenOption?.label || "—"}</div>
-              {decText && <div className="italic text-muted-foreground">"{decText}"</div>}
+              {decText && (
+                <div className="text-muted-foreground">
+                  "{decText}"
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {outcome && (
-        <div>
-          <div className="font-bold mb-1">Results:</div>
-          {outcome.type === "single" ? (
-            <div>{outcome.unitsSold} {scenario.unitLabel} sold</div>
-          ) : (
-            <div>{outcome.bookmarksSold} bookmarks and {outcome.cardsSold} cards sold</div>
-          )}
+      {/* Strategy */}
+      <div className="border rounded-md p-3 bg-white">
+        <div className="font-bold text-navy mb-2">
+          STRATEGY
         </div>
-      )}
-
-      <div>
-        <div className="font-bold mb-1">Math:</div>
-        {outcome?.type === "single" ? (
-          <div>{outcome.unitsSold} sold × ${outcome.price} = ${revenue} revenue</div>
-        ) : outcome?.type === "dual" ? (
-          <div>{outcome.bookmarksSold} bookmarks × $1 + {outcome.cardsSold} cards × $2 = ${revenue} revenue</div>
-        ) : null}
-        <div>Cost: ${tCost}</div>
-        <div>
-          Profit: ${revenue} − ${tCost} ={" "}
-          <span className="font-bold">${profit}</span>
+        <div className="text-[12px] text-muted-foreground mb-2">
+          Guide checks: Does this name a specific decision? Does it explain how profit is affected?
+        </div>
+        <div className="space-y-2">
+          <div>
+            <div className="font-semibold">The one thing they would change:</div>
+            <div>{get(stage, "step4", "change") || "—"}</div>
+          </div>
+          <div>
+            <div className="font-semibold">Why it affects profit:</div>
+            <div>{get(stage, "step4", "why") || "—"}</div>
+          </div>
         </div>
       </div>
 
-      <div>
-        <div className="font-bold">
-          Principle 1 — {get(stage, "step3", "p1") || "not selected"}:
+      {/* Principles */}
+      <div className="border rounded-md p-3 bg-white">
+        <div className="font-bold text-navy mb-2">
+          PRINCIPLES
         </div>
-        <div>{get(stage, "step3", "p1_text") || "—"}</div>
-      </div>
-
-      <div>
-        <div className="font-bold">
-          Principle 2 — {get(stage, "step3", "p2") || "not selected"}:
+        <div className="text-[12px] text-muted-foreground mb-2">
+          Guide checks: Are these in the student's own words — not copied definitions?
         </div>
-        <div>{get(stage, "step3", "p2_text") || "—"}</div>
-      </div>
-
-      <div>
-        <div className="font-bold">Strategy — What they would change:</div>
-        <div>{get(stage, "step4", "change") || "—"}</div>
-        <div className="font-bold mt-1">Why it affects profit:</div>
-        <div>{get(stage, "step4", "why") || "—"}</div>
+        {[1, 2].map((n) => {
+          const principle = get(stage, "step3", `p${n}`);
+          const explanation = get(stage, "step3", `p${n}_text`);
+          return (
+            <div key={n} className="ml-2 mb-2">
+              <div className="font-semibold">
+                Principle {n} — {principle || "not selected"}
+              </div>
+              <div>{explanation || "—"}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
