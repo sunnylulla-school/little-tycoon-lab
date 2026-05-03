@@ -640,17 +640,19 @@ function Step3({ stage, mode, get, setValue, flush }: any) {
         onBlur={() => flush(stage, "step3", "p2_text")}
       />
 
-      <CheckBox
-        items={[
-          "I named two different principles from the list.",
-          "I explained what each one means in my own words.",
-          "I connected each one to something I actually did — not just the definition.",
-        ]}
-        checked={[0, 1, 2].map((i) => get(stage, "step3", `chk_${i}`) === "1")}
-        onToggle={(i) =>
-          setValue(stage, "step3", `chk_${i}`, get(stage, "step3", `chk_${i}`) === "1" ? "0" : "1")
-        }
-      />
+      {stage !== 1 && (
+        <CheckBox
+          items={[
+            "I named two different principles from the list.",
+            "I explained what each one means in my own words.",
+            "I connected each one to something I actually did — not just the definition.",
+          ]}
+          checked={[0, 1, 2].map((i) => get(stage, "step3", `chk_${i}`) === "1")}
+          onToggle={(i) =>
+            setValue(stage, "step3", `chk_${i}`, get(stage, "step3", `chk_${i}`) === "1" ? "0" : "1")
+          }
+        />
+      )}
     </div>
   );
 }
