@@ -1021,27 +1021,84 @@ function collectFieldValues(stage: number, get: any) {
 
 function buildSummary(stage: number, scenario: Scenario, get: any) {
   const tCost = totalCost(scenario);
+  const decisionMap = Object.fromEntries(
+    scenario.decisions.map((d) => [d.id, get(stage, "step1", d.id)])
+  ) as Record<string, "A" | "B" | "C">;
+  const allMade = scenario.decisions.every((d) => get(stage, "step1", d.id));
+  const outcome = allMade ? calcOutcome(scenario, decisionMap) : null;
+
   let revenue = 0;
-  if (scenario.productType === "single") {
-    revenue = (parseFloat(get(stage, "step2", "qty")) || 0) * (scenario.pricePerItem || 0);
-  } else {
-    revenue = (parseFloat(get(stage, "step2", "qty_b")) || 0) * 1 + (parseFloat(get(stage, "step2", "qty_c")) || 0) * 2;
-  }
+  if (outcome?.type === "single") revenue = outcome.revenue;
+  else if (outcome?.type === "dual") revenue = outcome.revenue;
   const profit = revenue - tCost;
+
   return (
-    <div className="space-y-1.5">
-      <div><span className="font-bold">Scenario:</span> {scenario.name}</div>
+    <div className="space-y-3 text-[13px]">
       <div>
-        <span className="font-bold">Decisions:</span>{" "}
-        {scenario.decisions.map((d) => `${d.id.toUpperCase()}=${get(stage, "step1", d.id) || "—"}`).join(" · ")}
+        <span className="font-bold">Scenario:</span> {scenario.name}
       </div>
-      <div><span className="font-bold">Revenue:</span> ${revenue} · <span className="font-bold">Cost:</span> ${tCost} · <span className="font-bold">Profit:</span> ${profit}</div>
-      <div><span className="font-bold">Decision text:</span> {get(stage, "step1", "decisions_text")}</div>
-      <div><span className="font-bold">Results:</span> {get(stage, "step1", "results_text")}</div>
-      <div><span className="font-bold">Principle 1 ({get(stage, "step3", "p1")}):</span> {get(stage, "step3", "p1_text")}</div>
-      <div><span className="font-bold">Principle 2 ({get(stage, "step3", "p2")}):</span> {get(stage, "step3", "p2_text")}</div>
-      <div><span className="font-bold">Strategy change:</span> {get(stage, "step4", "change")}</div>
-      <div><span className="font-bold">Why it affects profit:</span> {get(stage, "step4", "why")}</div>
+
+      <div>
+        <div className="font-bold mb-1">Decisions Made:</div>
+        {scenario.decisions.map((d) => {
+          const chosenKey = get(stage, "step1", d.id);
+          const chosenOption = d.options.find((o) => o.key === chosenKey);
+          const decText = get(stage, "step1", `dec_text_${d.id}`);
+          return (
+            <div key={d.id} className="ml-2 mb-2">
+              <div className="font-semibold">{d.question}</div>
+              <div>Chose: {chosenOption?.label || "—"}</div>
+              {decText && <div className="italic text-muted-foreground">"{decText}"</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {outcome && (
+        <div>
+          <div className="font-bold mb-1">Results:</div>
+          {outcome.type === "single" ? (
+            <div>{outcome.unitsSold} {scenario.unitLabel} sold</div>
+          ) : (
+            <div>{outcome.bookmarksSold} bookmarks and {outcome.cardsSold} cards sold</div>
+          )}
+        </div>
+      )}
+
+      <div>
+        <div className="font-bold mb-1">Math:</div>
+        {outcome?.type === "single" ? (
+          <div>{outcome.unitsSold} sold × ${outcome.price} = ${revenue} revenue</div>
+        ) : outcome?.type === "dual" ? (
+          <div>{outcome.bookmarksSold} bookmarks × $1 + {outcome.cardsSold} cards × $2 = ${revenue} revenue</div>
+        ) : null}
+        <div>Cost: ${tCost}</div>
+        <div>
+          Profit: ${revenue} − ${tCost} ={" "}
+          <span className="font-bold">${profit}</span>
+        </div>
+      </div>
+
+      <div>
+        <div className="font-bold">
+          Principle 1 — {get(stage, "step3", "p1") || "not selected"}:
+        </div>
+        <div>{get(stage, "step3", "p1_text") || "—"}</div>
+      </div>
+
+      <div>
+        <div className="font-bold">
+          Principle 2 — {get(stage, "step3", "p2") || "not selected"}:
+        </div>
+        <div>{get(stage, "step3", "p2_text") || "—"}</div>
+      </div>
+
+      <div>
+        <div className="font-bold">Strategy — What they would change:</div>
+        <div>{get(stage, "step4", "change") || "—"}</div>
+        <div className="font-bold mt-1">Why it affects profit:</div>
+        <div>{get(stage, "step4", "why") || "—"}</div>
+      </div>
     </div>
   );
 }
