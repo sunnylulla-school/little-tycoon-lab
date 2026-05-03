@@ -735,16 +735,18 @@ function Step4({ stage, mode, get, setValue, flush }: any) {
         onBlur={() => flush(stage, "step4", "why")}
       />
 
-      <CheckBox
-        items={[
-          'I named one specific thing I would change — not just "do better."',
-          "I explained exactly how that change would affect my profit.",
-        ]}
-        checked={[0, 1].map((i) => get(stage, "step4", `chk_${i}`) === "1")}
-        onToggle={(i) =>
-          setValue(stage, "step4", `chk_${i}`, get(stage, "step4", `chk_${i}`) === "1" ? "0" : "1")
-        }
-      />
+      {stage !== 1 && (
+        <CheckBox
+          items={[
+            'I named one specific thing I would change — not just "do better."',
+            "I explained exactly how that change would affect my profit.",
+          ]}
+          checked={[0, 1].map((i) => get(stage, "step4", `chk_${i}`) === "1")}
+          onToggle={(i) =>
+            setValue(stage, "step4", `chk_${i}`, get(stage, "step4", `chk_${i}`) === "1" ? "0" : "1")
+          }
+        />
+      )}
     </div>
   );
 }
