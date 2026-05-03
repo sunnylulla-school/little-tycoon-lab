@@ -71,7 +71,10 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
 
   if (!loaded) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
-  const scenario = scenarioId ? getScenario(scenarioId) : null;
+  // Stage 1 uses the student's pick on Step 0; Stage 2/3 use the auto-assigned scenario.
+  const pickedId = parseInt(get(stage, "pick", "scenario") || "0", 10);
+  const effectiveScenarioId = stage === 1 ? (pickedId || null) : scenarioId;
+  const scenario = effectiveScenarioId ? getScenario(effectiveScenarioId) : null;
 
   // Page completion logic
   const pageComplete = (p: string): boolean => {
@@ -147,6 +150,19 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
       )}
       {page === "step4" && scenario && (
         <Step4 stage={stage} mode={mode} get={get} setValue={setValue} flush={flush} />
+      )}
+
+      {/* Next button — shown on every page except intro (handled inline) and the last page */}
+      {page !== "intro" && pageIdx < pages.length - 1 && (
+        <div className="mt-8 text-center">
+          <Button
+            className="bg-navy text-white hover:bg-navy/90"
+            disabled={!pageComplete(page)}
+            onClick={() => setPageIdx(pageIdx + 1)}
+          >
+            {pageComplete(page) ? `Continue to ${pageLabel(pages[pageIdx + 1])}` : "Finish this page to continue"}
+          </Button>
+        </div>
       )}
 
       {/* Stage sign-off / pass-fail */}
