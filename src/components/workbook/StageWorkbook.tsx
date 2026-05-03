@@ -361,10 +361,7 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
                   return (
                     <button
                       key={o.key}
-                      disabled={lockedAfterAll && !isSel}
-                      className={`decision-btn ${isSel ? "decision-btn-selected" : ""} ${
-                        lockedAfterAll && !isSel ? "opacity-50" : ""
-                      }`}
+                      className={`decision-btn ${isSel ? "decision-btn-selected" : ""}`}
                       onClick={() => setValue(stage, "step1", d.id, o.key)}
                     >
                       <span className="font-bold">{o.key}.</span> {o.label}
@@ -375,13 +372,6 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
             </div>
           );
         })}
-        {lockedAfterAll && (
-          <UnlockDecisions
-            onUnlock={() => {
-              decisionKeys.forEach((k: string) => setValue(stage, "step1", k, ""));
-            }}
-          />
-        )}
       </div>
 
       {mode === "guided" && (
