@@ -58,8 +58,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
   };
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("signOut error", e);
+    }
     setStudent(null);
+    setSession(null);
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   };
 
   return (
