@@ -416,6 +416,7 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
                 <TextField
                   label="Which decision did you choose, and why?"
                   rows={3}
+                  speak="Which decision did you choose, and why? Write at least one sentence explaining your thinking."
                   value={get(stage, "step1", decTextKey)}
                   onChange={(v) => setValue(stage, "step1", decTextKey, v, { debounce: true })}
                   onBlur={() => flush(stage, "step1", decTextKey)}
