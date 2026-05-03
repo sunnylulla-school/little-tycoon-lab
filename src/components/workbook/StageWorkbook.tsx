@@ -152,6 +152,19 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
         <Step4 stage={stage} mode={mode} get={get} setValue={setValue} flush={flush} />
       )}
 
+      {/* Next button — shown on every page except intro (handled inline) and the last page */}
+      {page !== "intro" && pageIdx < pages.length - 1 && (
+        <div className="mt-8 text-center">
+          <Button
+            className="bg-navy text-white hover:bg-navy/90"
+            disabled={!pageComplete(page)}
+            onClick={() => setPageIdx(pageIdx + 1)}
+          >
+            {pageComplete(page) ? `Continue to ${pageLabel(pages[pageIdx + 1])}` : "Finish this page to continue"}
+          </Button>
+        </div>
+      )}
+
       {/* Stage sign-off / pass-fail */}
       {page === pages[pages.length - 1] && (
         <StageFooter
