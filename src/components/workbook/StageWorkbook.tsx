@@ -579,22 +579,12 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
               YOUR RESULTS FROM STEP 1
             </div>
             <SpeakButton
-              text={
-                prefilledOutcome.type === "single"
-                  ? `Your results from Step 1. You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use these numbers in the revenue calculation below.`
-                  : `Your results from Step 1. You sold ${(prefilledOutcome as any).bookmarksSold} bookmarks and ${(prefilledOutcome as any).cardsSold} cards. Use these numbers in the revenue calculation below.`
-              }
+              text={`Your results from Step 1. You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use these numbers in the revenue calculation below.`}
             />
           </div>
-          {prefilledOutcome.type === "single" ? (
-            <p className="text-[13px] font-bold text-[#1E2459]">
-              You sold {prefilledOutcome.unitsSold} {scenario.unitLabel} at ${singlePrice} each.
-            </p>
-          ) : (
-            <p className="text-[13px] font-bold text-[#1E2459]">
-              You sold {(prefilledOutcome as any).bookmarksSold} bookmarks and {(prefilledOutcome as any).cardsSold} cards.
-            </p>
-          )}
+          <p className="text-[13px] font-bold text-[#1E2459]">
+            You sold {prefilledOutcome.unitsSold} {scenario.unitLabel} at ${singlePrice} each.
+          </p>
           <p className="text-[12px] text-muted-foreground mt-1">
             Use these numbers in the revenue calculation below.
           </p>
