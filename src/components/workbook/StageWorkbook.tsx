@@ -1141,9 +1141,11 @@ function StageFooter({ stage, stageComplete, scenario, get, setValue, unlock, as
           intro={`Your guide needs to review your work and enter the PIN to unlock Stage ${stage + 1}.`}
           summary={summary}
           checklist={[
-            "Math is complete and correct",
-            "Strategy names a specific decision and explains profit impact — not just \"do better\"",
-            "Both principles are explained in the student's own words",
+            "Math: Revenue, Cost, and Profit are all marked Correct above",
+            "Strategy: names a specific decision — not just 'do better'",
+            "Strategy: explains exactly how the change would affect profit",
+            "Principle 1: explained in student's own words — not a copied definition",
+            "Principle 2: explained in student's own words — not a copied definition",
           ]}
           onPass={async () => {
             await unlock(stage + 1);
