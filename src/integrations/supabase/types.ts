@@ -14,7 +14,173 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      progress: {
+        Row: {
+          field_key: string
+          field_value: string | null
+          id: string
+          page: string
+          stage: number
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          field_key: string
+          field_value?: string | null
+          id?: string
+          page: string
+          stage: number
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          field_key?: string
+          field_value?: string | null
+          id?: string
+          page?: string
+          stage?: number
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenario_assignments: {
+        Row: {
+          assigned_at: string
+          id: string
+          scenario_id: number
+          stage: number
+          student_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          id?: string
+          scenario_id: number
+          stage: number
+          student_id: string
+        }
+        Update: {
+          assigned_at?: string
+          id?: string
+          scenario_id?: number
+          stage?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stage_unlocks: {
+        Row: {
+          id: string
+          stage_unlocked: number
+          student_id: string
+          unlocked_at: string
+        }
+        Insert: {
+          id?: string
+          stage_unlocked: number
+          student_id: string
+          unlocked_at?: string
+        }
+        Update: {
+          id?: string
+          stage_unlocked?: number
+          student_id?: string
+          unlocked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stage_unlocks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stage3_attempts: {
+        Row: {
+          attempt_number: number
+          field_values: Json
+          guide_pin_confirmed: boolean
+          id: string
+          result: string
+          scenario_id: number
+          student_id: string
+          timestamp: string
+        }
+        Insert: {
+          attempt_number: number
+          field_values?: Json
+          guide_pin_confirmed?: boolean
+          id?: string
+          result: string
+          scenario_id: number
+          student_id: string
+          timestamp?: string
+        }
+        Update: {
+          attempt_number?: number
+          field_values?: Json
+          guide_pin_confirmed?: boolean
+          id?: string
+          result?: string
+          scenario_id?: number
+          student_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stage3_attempts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          created_at: string
+          email: string | null
+          google_id: string | null
+          id: string
+          name: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          google_id?: string | null
+          id?: string
+          name?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          google_id?: string | null
+          id?: string
+          name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
