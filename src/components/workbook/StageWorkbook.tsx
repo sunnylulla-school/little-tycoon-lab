@@ -497,10 +497,40 @@ function UnlockDecisions({ onUnlock }: { onUnlock: () => void }) {
 function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
   const tCost = totalCost(scenario);
 
+  const decisionMap2 = Object.fromEntries(
+    scenario.decisions.map((d: any) => [d.id, get(stage, "step1", d.id)])
+  ) as Record<string, "A" | "B" | "C">;
+
+  const allMade2 = scenario.decisions.every((d: any) => get(stage, "step1", d.id));
+  const prefilledOutcome = allMade2 ? calcOutcome(scenario, decisionMap2) : null;
+
+  // Pre-populate revenue qty fields from outcome if empty
+  useEffect(() => {
+    if (!prefilledOutcome) return;
+    if (prefilledOutcome.type === "single") {
+      if (!get(stage, "step2", "qty")) {
+        setValue(stage, "step2", "qty", String(prefilledOutcome.unitsSold));
+      }
+    } else {
+      if (!get(stage, "step2", "qty_b")) {
+        setValue(stage, "step2", "qty_b", String(prefilledOutcome.bookmarksSold));
+      }
+      if (!get(stage, "step2", "qty_c")) {
+        setValue(stage, "step2", "qty_c", String(prefilledOutcome.cardsSold));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefilledOutcome?.type]);
+
+  const singlePrice =
+    scenario.id === 3
+      ? CAR_WASH_PRICES[decisionMap2.d3] ?? 5
+      : scenario.pricePerItem || 0;
+
   let revenue = 0;
   if (scenario.productType === "single") {
     const q = parseFloat(get(stage, "step2", "qty")) || 0;
-    revenue = q * (scenario.pricePerItem || 0);
+    revenue = q * singlePrice;
   } else {
     const b = parseFloat(get(stage, "step2", "qty_b")) || 0;
     const c = parseFloat(get(stage, "step2", "qty_c")) || 0;
@@ -515,6 +545,24 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
         <p className="body-text mb-4">
           Every business decision has a money result. Now you are going to calculate yours. You may use a calculator for all of this.
         </p>
+      )}
+
+      {prefilledOutcome && (
+        <div className="border-2 border-gold rounded-md p-4 bg-white mb-4">
+          <div className="overline mb-2">YOUR RESULTS FROM STEP 1</div>
+          {prefilledOutcome.type === "single" ? (
+            <div className="text-[15px] font-bold text-navy">
+              You sold {prefilledOutcome.unitsSold} {scenario.unitLabel} at ${prefilledOutcome.price} each.
+            </div>
+          ) : (
+            <div className="text-[15px] font-bold text-navy">
+              You sold {prefilledOutcome.bookmarksSold} bookmarks and {prefilledOutcome.cardsSold} cards.
+            </div>
+          )}
+          <div className="text-[13px] text-muted-foreground mt-2">
+            Use these numbers in the revenue calculation below.
+          </div>
+        </div>
       )}
 
       <ActivityHeading>Activity 2 — Revenue</ActivityHeading>
@@ -536,16 +584,22 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
 
       {scenario.productType === "single" ? (
         <div className="space-y-2">
+          <div className="text-[13px] text-muted-foreground italic">
+            Your result from Step 1 is pre-filled. The total calculates automatically.
+          </div>
           <NumberField
             label="How many did I sell?"
             value={get(stage, "step2", "qty")}
             onChange={(v) => setValue(stage, "step2", "qty", v)}
           />
-          <div className="text-[13px] text-muted-foreground">Price per item: ${scenario.pricePerItem}</div>
+          <div className="text-[13px] text-muted-foreground">Price per item: ${singlePrice}</div>
           <MathRow label="MY REVENUE" value={`$${revenue}`} result />
         </div>
       ) : (
         <div className="space-y-2">
+          <div className="text-[13px] text-muted-foreground italic">
+            Your results from Step 1 are pre-filled. The total calculates automatically.
+          </div>
           <NumberField
             label="How many bookmarks did I sell?"
             value={get(stage, "step2", "qty_b")}
