@@ -13,6 +13,7 @@ import {
   MathRow,
   NowYouTry,
   Overline,
+  ReadableParagraph,
   SectionHeading,
   SidebarBox,
   StepBar,
