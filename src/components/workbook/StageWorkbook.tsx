@@ -551,173 +551,344 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
   const decisionMap2 = Object.fromEntries(
     scenario.decisions.map((d: any) => [d.id, get(stage, "step1", d.id)])
   ) as Record<string, "A" | "B" | "C">;
-
   const allMade2 = scenario.decisions.every((d: any) => get(stage, "step1", d.id));
   const prefilledOutcome = allMade2 ? calcOutcome(scenario, decisionMap2) : null;
 
-  // Pre-populate revenue qty fields from outcome if empty
-  useEffect(() => {
-    if (!prefilledOutcome) return;
-    if (prefilledOutcome.type === "single") {
-      if (!get(stage, "step2", "qty")) {
-        setValue(stage, "step2", "qty", String(prefilledOutcome.unitsSold));
-      }
-    } else {
-      if (!get(stage, "step2", "qty_b")) {
-        setValue(stage, "step2", "qty_b", String(prefilledOutcome.bookmarksSold));
-      }
-      if (!get(stage, "step2", "qty_c")) {
-        setValue(stage, "step2", "qty_c", String(prefilledOutcome.cardsSold));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefilledOutcome?.type]);
-
   const singlePrice =
     scenario.id === 3
-      ? CAR_WASH_PRICES[decisionMap2.d3] ?? 5
+      ? (CAR_WASH_PRICES as any)[decisionMap2.d3] ?? 5
       : scenario.pricePerItem || 0;
 
-  let revenue = 0;
-  if (scenario.productType === "single") {
-    const q = parseFloat(get(stage, "step2", "qty")) || 0;
-    revenue = q * singlePrice;
-  } else {
-    const b = parseFloat(get(stage, "step2", "qty_b")) || 0;
-    const c = parseFloat(get(stage, "step2", "qty_c")) || 0;
-    revenue = b * 1 + c * 2;
-  }
-  const profit = revenue - tCost;
+  const revenueAnswer = get(stage, "step2", "revenue_answer") || "";
+  const correctRevenue = prefilledOutcome?.revenue ?? 0;
+  const revenueCorrect = revenueAnswer !== "" && parseFloat(revenueAnswer) === correctRevenue;
+  const [revenueAttempted, setRevenueAttempted] = useState(false);
+
+  const costItems = scenario.costItems as { name: string; amount: number }[];
+  const costEntryComplete = costItems.every((item, i) => {
+    const nameOk = (get(stage, "step2", `cost_name_${i}`) || "").trim().length > 0;
+    const amtOk = parseFloat(get(stage, "step2", `cost_amt_${i}`) || "") === item.amount;
+    return nameOk && amtOk;
+  });
+
+  const totalCostAnswer = get(stage, "step2", "total_cost_answer") || "";
+  const totalCostCorrect = totalCostAnswer !== "" && parseFloat(totalCostAnswer) === tCost;
+  const [totalCostAttempted, setTotalCostAttempted] = useState(false);
+
+  const profitAnswer = get(stage, "step2", "profit_answer") || "";
+  const correctProfit = revenueCorrect && totalCostCorrect ? correctRevenue - tCost : null;
+  const profitCorrect = correctProfit !== null && profitAnswer !== "" && parseFloat(profitAnswer) === correctProfit;
+  const [profitAttempted, setProfitAttempted] = useState(false);
+
+  const revenueQuestionText =
+    prefilledOutcome?.type === "single"
+      ? `You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use your calculator to multiply those two numbers. What is your total revenue?`
+      : prefilledOutcome?.type === "dual"
+      ? `You sold ${(prefilledOutcome as any).bookmarksSold} bookmarks at $1 each and ${(prefilledOutcome as any).cardsSold} cards at $2 each. Use your calculator to work out the total. What is your total revenue?`
+      : "Complete Step 1 first to see your sales numbers.";
 
   return (
     <div>
       <StepBar step={2} title="Do the Math" />
       {mode === "guided" && (
-        <p className="body-text mb-4">
-          Every business decision has a money result. Now you are going to calculate yours. You may use a calculator for all of this.
-        </p>
+        <ReadableParagraph>
+          Every business decision has a money result. Now you are going to calculate yours. Use a calculator for the totals. Type each answer in the box provided.
+        </ReadableParagraph>
       )}
 
       {prefilledOutcome && (
-        <div className="border-2 border-gold rounded-md p-4 bg-white mb-4">
-          <div className="overline mb-2">YOUR RESULTS FROM STEP 1</div>
-          {prefilledOutcome.type === "single" ? (
-            <div className="text-[15px] font-bold text-navy">
-              You sold {prefilledOutcome.unitsSold} {scenario.unitLabel} at ${prefilledOutcome.price} each.
+        <div className="border rounded-md p-4 bg-[#EEF0F8] border-l-4 border-l-[#1E2459] mb-6">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="text-[11px] font-bold text-[#C9A84C] uppercase tracking-wide">
+              YOUR RESULTS FROM STEP 1
             </div>
-          ) : (
-            <div className="text-[15px] font-bold text-navy">
-              You sold {prefilledOutcome.bookmarksSold} bookmarks and {prefilledOutcome.cardsSold} cards.
-            </div>
-          )}
-          <div className="text-[13px] text-muted-foreground mt-2">
-            Use these numbers in the revenue calculation below.
+            <SpeakButton
+              text={
+                prefilledOutcome.type === "single"
+                  ? `Your results from Step 1. You sold ${prefilledOutcome.unitsSold} ${scenario.unitLabel} at $${singlePrice} each. Use these numbers in the revenue calculation below.`
+                  : `Your results from Step 1. You sold ${(prefilledOutcome as any).bookmarksSold} bookmarks and ${(prefilledOutcome as any).cardsSold} cards. Use these numbers in the revenue calculation below.`
+              }
+            />
           </div>
+          {prefilledOutcome.type === "single" ? (
+            <p className="text-[13px] font-bold text-[#1E2459]">
+              You sold {prefilledOutcome.unitsSold} {scenario.unitLabel} at ${singlePrice} each.
+            </p>
+          ) : (
+            <p className="text-[13px] font-bold text-[#1E2459]">
+              You sold {(prefilledOutcome as any).bookmarksSold} bookmarks and {(prefilledOutcome as any).cardsSold} cards.
+            </p>
+          )}
+          <p className="text-[12px] text-muted-foreground mt-1">
+            Use these numbers in the revenue calculation below.
+          </p>
         </div>
       )}
 
-      <ActivityHeading>Activity 2 — Revenue</ActivityHeading>
+      <ActivityHeading speak="Activity 2. Revenue. Calculate the total money you brought in from selling.">
+        Activity 2 — Revenue
+      </ActivityHeading>
       {mode === "guided" && (
-        <SidebarBox title="What is Revenue?">
+        <SidebarBox
+          title="What is Revenue?"
+          speak="Revenue is all the money you brought in from selling. It is the total before you subtract anything. To find revenue, multiply the number you sold by the price per item."
+        >
           <ul className="list-disc pl-5 space-y-1">
             <li>Revenue is all the money you brought in from selling. It is the total BEFORE you subtract anything.</li>
-            <li>Formula: Number sold × Price per item = Revenue.</li>
-            {scenario.id === 4 && <li>Formula: (Bookmarks sold × $1) + (Cards sold × $2) = Revenue.</li>}
+            {scenario.productType === "single" && (
+              <li>Formula: Number sold × Price per item = Revenue.</li>
+            )}
+            {scenario.id === 4 && (
+              <li>Formula: (Bookmarks sold × $1) + (Cards sold × $2) = Revenue.</li>
+            )}
           </ul>
         </SidebarBox>
       )}
       {mode === "guided" && (
-        <ExampleBox label="MARCUS'S EXAMPLE" name="Marcus T., Grade 3">
-          I sold 12 cups at $1 each. 12 × $1 = $12. My revenue is $12.
+        <ExampleBox
+          label="MARCUS'S EXAMPLE"
+          name="Marcus T., Grade 3"
+          speak="I sold 12 cups at $1 each. I used my calculator: 12 times 1 equals 12. My revenue is $12."
+        >
+          I sold 12 cups at $1 each. I used my calculator: 12 × $1 = $12. My revenue is $12.
         </ExampleBox>
       )}
       {mode === "guided" && <NowYouTry />}
 
-      {scenario.productType === "single" ? (
-        <div className="space-y-2">
-          <div className="text-[13px] text-muted-foreground italic">
-            Your result from Step 1 is pre-filled. The total calculates automatically.
-          </div>
-          <NumberField
-            label="How many did I sell?"
-            value={get(stage, "step2", "qty")}
-            onChange={(v) => setValue(stage, "step2", "qty", v)}
-          />
-          <div className="text-[13px] text-muted-foreground">Price per item: ${singlePrice}</div>
-          <MathRow label="MY REVENUE" value={`$${revenue}`} result />
+      <div className="border rounded-md p-4 bg-white mt-2">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <p className="text-[13px]">{revenueQuestionText}</p>
+          <SpeakButton text={revenueQuestionText} />
         </div>
-      ) : (
-        <div className="space-y-2">
-          <div className="text-[13px] text-muted-foreground italic">
-            Your results from Step 1 are pre-filled. The total calculates automatically.
-          </div>
-          <NumberField
-            label="How many bookmarks did I sell?"
-            value={get(stage, "step2", "qty_b")}
-            onChange={(v) => setValue(stage, "step2", "qty_b", v)}
+        <div className="flex items-center gap-3">
+          <label className="text-[13px] font-bold text-[#1E2459]">My total revenue: $</label>
+          <input
+            type="number"
+            min="0"
+            className={`write-area w-28 ${
+              revenueAttempted && !revenueCorrect
+                ? "border-red-500 bg-red-50"
+                : revenueCorrect
+                ? "border-green-500 bg-green-50"
+                : ""
+            }`}
+            value={revenueAnswer}
+            onChange={(e) => {
+              setValue(stage, "step2", "revenue_answer", e.target.value);
+              setRevenueAttempted(false);
+            }}
+            onBlur={() => setRevenueAttempted(true)}
           />
-          <div className="text-[13px] text-muted-foreground">Price per bookmark: $1</div>
-          <NumberField
-            label="How many cards did I sell?"
-            value={get(stage, "step2", "qty_c")}
-            onChange={(v) => setValue(stage, "step2", "qty_c", v)}
-          />
-          <div className="text-[13px] text-muted-foreground">Price per card: $2</div>
-          <MathRow label="MY REVENUE" value={`$${revenue}`} result />
+          {revenueCorrect && (
+            <span className="text-green-600 font-bold text-[13px]">✓ Correct!</span>
+          )}
         </div>
-      )}
+        {revenueAttempted && !revenueCorrect && revenueAnswer !== "" && (
+          <p className="text-red-600 text-[12px] mt-2 font-bold">
+            Not quite — check your multiplication and try again.
+          </p>
+        )}
+      </div>
 
-      <ActivityHeading>Activity 3 — Cost</ActivityHeading>
+      <ActivityHeading speak="Activity 3. Cost. Write down each item you bought and what it cost. Then add them all up.">
+        Activity 3 — Cost
+      </ActivityHeading>
       {mode === "guided" && (
-        <SidebarBox title="What is Cost?">
+        <SidebarBox
+          title="What is Cost?"
+          speak="Cost is all the money you spent before you started selling. You spent this money whether you sold anything or not. Write down each item and what it cost, then add them all up."
+        >
           <ul className="list-disc pl-5 space-y-1">
-            <li>Cost is all the money you spent BEFORE you started selling. You spent this money whether you sold anything or not.</li>
-            <li>Add up every item. That total is your Cost.</li>
+            <li>Cost is all the money you spent BEFORE you started selling.</li>
+            <li>Write down each item and what it cost. Then add them all up.</li>
           </ul>
         </SidebarBox>
       )}
       {mode === "guided" && <NowYouTry />}
 
       <div className="border rounded-md overflow-hidden mt-2">
-        {scenario.costItems.map((c: any) => (
-          <MathRow key={c.name} label={c.name} value={`$${c.amount}`} />
-        ))}
-        <MathRow label="TOTAL COST" value={`$${tCost}`} result />
+        <div className="grid grid-cols-2 bg-[#1E2459] text-white text-[12px] font-bold px-3 py-2">
+          <span>Item</span>
+          <span>Cost</span>
+        </div>
+        {costItems.map((item, i) => {
+          const nameVal = get(stage, "step2", `cost_name_${i}`) || "";
+          const amtVal = get(stage, "step2", `cost_amt_${i}`) || "";
+          const amtOk = parseFloat(amtVal) === item.amount;
+          const rowAttempted = amtVal !== "";
+          return (
+            <div key={i} className="grid grid-cols-2 border-b px-3 py-3 gap-2 items-start bg-white">
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <p className="text-[11px] text-[#C9A84C] font-bold">
+                    Item {i + 1}: {item.name}
+                  </p>
+                  <SpeakButton text={`Item ${i + 1} is ${item.name}. Write that in the box below.`} />
+                </div>
+                <input
+                  type="text"
+                  placeholder={item.name}
+                  className="write-area w-full text-[13px]"
+                  value={nameVal}
+                  onChange={(e) => setValue(stage, "step2", `cost_name_${i}`, e.target.value)}
+                />
+              </div>
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <p className="text-[11px] text-[#C9A84C] font-bold">Cost: ${item.amount}</p>
+                  <SpeakButton text={`This item cost $${item.amount}. Write that in the box below.`} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px]">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder={String(item.amount)}
+                    className={`write-area w-20 text-[13px] ${
+                      rowAttempted && !amtOk
+                        ? "border-red-500 bg-red-50"
+                        : amtOk
+                        ? "border-green-500 bg-green-50"
+                        : ""
+                    }`}
+                    value={amtVal}
+                    onChange={(e) => setValue(stage, "step2", `cost_amt_${i}`, e.target.value)}
+                  />
+                  {nameVal.trim().length > 0 && amtOk && (
+                    <span className="text-green-600 font-bold text-[13px]">✓</span>
+                  )}
+                </div>
+                {rowAttempted && !amtOk && (
+                  <p className="text-red-600 text-[11px] mt-1">
+                    Check that amount — it should be ${item.amount}.
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <ActivityHeading>Activity 4 — Profit</ActivityHeading>
-      {mode === "guided" && (
-        <SidebarBox title="What is Profit?">
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Profit is what you actually get to keep after paying your costs.</li>
-            <li>Profit = Revenue minus Cost.</li>
-            <li>If your answer is a negative number that is a loss. It means you spent more than you made. That happens to real businesses too.</li>
-          </ul>
-        </SidebarBox>
-      )}
-      {mode === "guided" && (
-        <ExampleBox label="MARCUS'S EXAMPLE" name="Marcus T., Grade 3">
-          My revenue was $12. My cost was $8. $12 minus $8 = $4. My profit is $4. Revenue is NOT the same as profit. Profit is what is left AFTER costs.
-        </ExampleBox>
-      )}
-      {mode === "guided" && <NowYouTry />}
-
-      <div className="border rounded-md overflow-hidden">
-        <MathRow label="My Revenue" value={`$${revenue}`} />
-        <MathRow label="My Cost" value={`$${tCost}`} />
-        <MathRow label="MY PROFIT" value={`$${profit}`} result />
-      </div>
-      {profit < 0 && (
-        <div className="mt-2 text-[13px] font-bold text-gold">
-          This is a loss — you spent more than you made. That happens to real businesses too. Think about why when you get to the strategy step.
+      {costEntryComplete && (
+        <div className="border rounded-md p-4 bg-white mt-4">
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <p className="text-[13px]">
+              Now add up all {costItems.length} cost items using your calculator. What is your total cost?
+            </p>
+            <SpeakButton text={`Now add up all ${costItems.length} cost items using your calculator. What is your total cost?`} />
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-[13px] font-bold text-[#1E2459]">My total cost: $</label>
+            <input
+              type="number"
+              min="0"
+              className={`write-area w-28 ${
+                totalCostAttempted && !totalCostCorrect
+                  ? "border-red-500 bg-red-50"
+                  : totalCostCorrect
+                  ? "border-green-500 bg-green-50"
+                  : ""
+              }`}
+              value={totalCostAnswer}
+              onChange={(e) => {
+                setValue(stage, "step2", "total_cost_answer", e.target.value);
+                setTotalCostAttempted(false);
+              }}
+              onBlur={() => setTotalCostAttempted(true)}
+            />
+            {totalCostCorrect && (
+              <span className="text-green-600 font-bold text-[13px]">✓ Correct!</span>
+            )}
+          </div>
+          {totalCostAttempted && !totalCostCorrect && totalCostAnswer !== "" && (
+            <p className="text-red-600 text-[12px] mt-2 font-bold">
+              Not quite — add up all {costItems.length} items and try again.
+            </p>
+          )}
         </div>
       )}
 
-      {stage !== 1 && (
+      {revenueCorrect && totalCostCorrect && (
+        <>
+          <ActivityHeading speak="Activity 4. Profit. Subtract your total cost from your revenue to find out what you actually get to keep.">
+            Activity 4 — Profit
+          </ActivityHeading>
+          {mode === "guided" && (
+            <SidebarBox
+              title="What is Profit?"
+              speak="Profit is what you actually get to keep after paying your costs. Profit equals Revenue minus Cost. If your answer is a negative number, that is a loss. It means you spent more than you made. That happens to real businesses too."
+            >
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Profit is what you actually get to keep after paying your costs.</li>
+                <li>Profit = Revenue minus Cost.</li>
+                <li>If your answer is a negative number that is a loss. It means you spent more than you made. That happens to real businesses too.</li>
+              </ul>
+            </SidebarBox>
+          )}
+          {mode === "guided" && (
+            <ExampleBox
+              label="MARCUS'S EXAMPLE"
+              name="Marcus T., Grade 3"
+              speak="My revenue was $12. My cost was $8. I used my calculator: 12 minus 8 equals 4. My profit is $4. Revenue is NOT the same as profit. Profit is what is left after costs."
+            >
+              My revenue was $12. My cost was $8. I used my calculator: 12 − 8 = 4. My profit is $4. Revenue is NOT the same as profit. Profit is what is left AFTER costs.
+            </ExampleBox>
+          )}
+          {mode === "guided" && <NowYouTry />}
+
+          <div className="border rounded-md p-4 bg-white mt-2">
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <p className="text-[13px]">
+                Your revenue was{" "}
+                <span className="font-bold text-[#1E2459]">${correctRevenue}</span> and your
+                total cost was{" "}
+                <span className="font-bold text-[#1E2459]">${tCost}</span>. Subtract your cost
+                from your revenue using your calculator. What is your profit?
+              </p>
+              <SpeakButton text={`Your revenue was $${correctRevenue} and your total cost was $${tCost}. Subtract your cost from your revenue using your calculator. What is your profit?`} />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-[13px] font-bold text-[#1E2459]">My profit: $</label>
+              <input
+                type="number"
+                className={`write-area w-28 ${
+                  profitAttempted && !profitCorrect
+                    ? "border-red-500 bg-red-50"
+                    : profitCorrect
+                    ? "border-green-500 bg-green-50"
+                    : ""
+                }`}
+                value={profitAnswer}
+                onChange={(e) => {
+                  setValue(stage, "step2", "profit_answer", e.target.value);
+                  setProfitAttempted(false);
+                }}
+                onBlur={() => setProfitAttempted(true)}
+              />
+              {profitCorrect && (
+                <span className="text-green-600 font-bold text-[13px]">✓ Correct!</span>
+              )}
+            </div>
+            {profitAttempted && !profitCorrect && profitAnswer !== "" && (
+              <p className="text-red-600 text-[12px] mt-2 font-bold">
+                Not quite — subtract ${tCost} from ${correctRevenue} and try again.
+              </p>
+            )}
+            {profitCorrect && correctProfit! < 0 && (
+              <p className="text-[13px] font-bold text-[#C9A84C] mt-3">
+                This is a loss — you spent more than you made. That happens to real businesses
+                too. Think about why when you get to the strategy step.
+              </p>
+            )}
+          </div>
+        </>
+      )}
+
+      {stage !== 1 && revenueCorrect && totalCostCorrect && profitCorrect && (
         <CheckBox
           items={[
             "I calculated my Revenue — number sold times price.",
-            "I confirmed my Cost by reviewing every item.",
+            "I wrote down every cost item and its amount.",
             "I calculated my Profit — Revenue minus Cost.",
             "If my profit is negative I understand why that happened.",
           ]}
@@ -734,25 +905,78 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
 function Step3({ stage, mode, get, setValue, flush }: any) {
   const p1 = get(stage, "step3", "p1");
   const p2 = get(stage, "step3", "p2");
+
+  const principlesData = [
+    {
+      name: "Revenue",
+      def: "All the money you brought in from selling. It is the total before you subtract anything.",
+    },
+    {
+      name: "Cost",
+      def: "All the money you spent before you started selling — supplies, materials, everything you bought.",
+    },
+    {
+      name: "Profit",
+      def: "What you actually get to keep. Profit = Revenue minus Cost. If it is negative, that is a loss.",
+    },
+    {
+      name: "Customer",
+      def: "The person buying from you. Good entrepreneurs think about what their customer wants and where they will be.",
+    },
+    {
+      name: "Strategy",
+      def: "A deliberate plan to get a better result. Not just doing better — making a specific change for a specific reason.",
+    },
+  ];
+
+  const reteachSpeakText = principlesData
+    .map((p) => `${p.name}: ${p.def}`)
+    .join(" ");
+
   return (
     <div>
       <StepBar step={3} title="Spot the Principles" />
       {mode === "guided" && (
-        <p className="body-text mb-4">
-          Look back at the five ideas from page 1. Now think about what you actually did during your scenario. Which of those
-          ideas showed up for you? Pick two. Write the name of each one and explain it in your own words — what it means AND
-          how it showed up for you. Do not just copy the definition. Tell me what you actually did.
-        </p>
+        <ReadableParagraph>
+          Look back at the five ideas from page 1. Now think about what you actually did during your scenario. Which of those ideas showed up for you? Pick two. Write the name of each one and explain it in your own words — what it means AND how it showed up for you. Do not just copy the definition. Tell me what you actually did.
+        </ReadableParagraph>
       )}
 
-      <ActivityHeading>Activity 5 — Two Principles You Used</ActivityHeading>
+      {mode === "guided" && (
+        <div className="border rounded-md overflow-hidden mb-6">
+          <div className="bg-[#1E2459] text-white px-4 py-2.5 flex items-center justify-between">
+            <span className="text-[12px] font-bold uppercase tracking-wide">
+              The Five Ideas — Quick Reminder
+            </span>
+            <SpeakButton text={`The five ideas. Quick reminder. ${reteachSpeakText}`} />
+          </div>
+          <div className="divide-y">
+            {principlesData.map((p) => (
+              <div key={p.name} className="flex gap-3 px-4 py-3 bg-white items-start">
+                <div className="text-[13px] font-bold text-[#1E2459] w-24 shrink-0">{p.name}</div>
+                <div className="text-[13px] text-[#222] flex-1">{p.def}</div>
+                <SpeakButton text={`${p.name}. ${p.def}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <ActivityHeading speak="Activity 5. Two Principles You Used. Pick two of the five ideas that showed up when you ran your scenario. Explain each one in your own words.">
+        Activity 5 — Two Principles You Used
+      </ActivityHeading>
 
       {mode === "guided" && (
-        <ExampleBox label="MARCUS'S EXAMPLE" name="Marcus T., Grade 3">
-          Principle 1 — Customer. A customer is the person buying from you. I thought about who would be at the park on a hot
-          day — kids who just played outside and needed something to drink. That is why I set up near the playground.
-          Principle 2 — Profit. Profit is what you actually keep after paying your costs. I made $12 from selling lemonade
-          but I had to spend $8 on supplies first. So my real profit was only $4 — not the whole $12.
+        <ExampleBox
+          label="MARCUS'S EXAMPLE"
+          name="Marcus T., Grade 3"
+          speak="Principle 1 — Customer. A customer is the person buying from you. I thought about who would be at the park on a hot day — kids who just played outside and needed something to drink. That is why I set up near the playground. Principle 2 — Profit. Profit is what you actually keep after paying your costs. I made $12 from selling lemonade but I had to spend $8 on supplies first. So my real profit was only $4 — not the whole $12."
+        >
+          Principle 1 — Customer. A customer is the person buying from you. I thought about who
+          would be at the park on a hot day — kids who just played outside and needed something to
+          drink. That is why I set up near the playground. Principle 2 — Profit. Profit is what
+          you actually keep after paying your costs. I made $12 from selling lemonade but I had to
+          spend $8 on supplies first. So my real profit was only $4 — not the whole $12.
         </ExampleBox>
       )}
       {mode === "guided" && <NowYouTry />}
@@ -762,8 +986,8 @@ function Step3({ stage, mode, get, setValue, flush }: any) {
         value={p1}
         disabledOption={p2}
         text={get(stage, "step3", "p1_text")}
-        onSelect={(v) => setValue(stage, "step3", "p1", v)}
-        onText={(v) => setValue(stage, "step3", "p1_text", v, { debounce: true })}
+        onSelect={(v: string) => setValue(stage, "step3", "p1", v)}
+        onText={(v: string) => setValue(stage, "step3", "p1_text", v, { debounce: true })}
         onBlur={() => flush(stage, "step3", "p1_text")}
       />
       <PrincipleBlock
@@ -771,8 +995,8 @@ function Step3({ stage, mode, get, setValue, flush }: any) {
         value={p2}
         disabledOption={p1}
         text={get(stage, "step3", "p2_text")}
-        onSelect={(v) => setValue(stage, "step3", "p2", v)}
-        onText={(v) => setValue(stage, "step3", "p2_text", v, { debounce: true })}
+        onSelect={(v: string) => setValue(stage, "step3", "p2", v)}
+        onText={(v: string) => setValue(stage, "step3", "p2_text", v, { debounce: true })}
         onBlur={() => flush(stage, "step3", "p2_text")}
       />
 
@@ -796,8 +1020,9 @@ function Step3({ stage, mode, get, setValue, flush }: any) {
 function PrincipleBlock({ n, value, disabledOption, text, onSelect, onText, onBlur }: any) {
   return (
     <div className="mt-4 border rounded-md p-4">
-      <div className="text-[14px] font-bold text-navy mb-2">
-        Principle {n} <FieldCheck ok={isSelectComplete(value) && isTextComplete(text)} />
+      <div className="text-[14px] font-bold text-navy mb-2 flex items-center gap-2">
+        Principle {n}
+        <FieldCheck ok={isSelectComplete(value) && isTextComplete(text)} />
       </div>
       <select
         className="border rounded-md px-3 py-2 text-[14px] w-full sm:w-64 mb-3"
@@ -813,6 +1038,7 @@ function PrincipleBlock({ n, value, disabledOption, text, onSelect, onText, onBl
       </select>
       <TextField
         label="What it means and how it showed up for me:"
+        speak="What does this principle mean? And how did it show up when you ran your scenario? Write at least one sentence explaining each."
         rows={4}
         value={text}
         onChange={onText}
@@ -827,30 +1053,44 @@ function Step4({ stage, mode, get, setValue, flush }: any) {
     <div>
       <StepBar step={4} title="Your Strategy" />
       {mode === "guided" && (
-        <p className="body-text mb-4">
-          Strategy means making a deliberate plan to get a better result. Now that you have seen your numbers, think about
-          what you would do differently if you ran this scenario again.
-        </p>
+        <ReadableParagraph>
+          Strategy means making a deliberate plan to get a better result. Now that you have seen your numbers, think about what you would do differently if you ran this scenario again.
+        </ReadableParagraph>
       )}
 
-      <ActivityHeading>Activity 6 — What Would You Change?</ActivityHeading>
+      <ActivityHeading speak="Activity 6. What Would You Change? Think about the decisions you made. If you ran this scenario again, what one thing would you do differently — and how would it affect your profit?">
+        Activity 6 — What Would You Change?
+      </ActivityHeading>
+
       {mode === "guided" && (
-        <SidebarBox title="What makes a strategy specific?">
+        <SidebarBox
+          title="What makes a strategy specific?"
+          speak="What makes a strategy specific? You name a specific decision — not just do better. You explain how that change would affect your profit. Vague: I would try harder next time. Specific: I would set up two hours earlier when more people are at the park — that would mean more customers and more revenue."
+        >
           <ul className="list-disc pl-5 space-y-1">
             <li>You name a specific decision — not just "do better."</li>
             <li>You explain HOW that change would affect your profit.</li>
             <li>Vague: "I would try harder next time."</li>
-            <li>Specific: "I would set up two hours earlier when more people are at the park — that would mean more customers and more revenue."</li>
+            <li>
+              Specific: "I would set up two hours earlier when more people are at the park — that
+              would mean more customers and more revenue."
+            </li>
           </ul>
         </SidebarBox>
       )}
+
       {mode === "guided" && (
-        <ExampleBox label="MARCUS'S EXAMPLE" name="Marcus T., Grade 3">
-          I would set up near the playground instead of near the parking lot. More kids walk by the playground when they are
-          hot and thirsty. If more people see my stand, more people will buy, and my revenue goes up.
+        <ExampleBox
+          label="MARCUS'S EXAMPLE"
+          name="Marcus T., Grade 3"
+          speak="I would set up near the playground instead of near the parking lot. More kids walk by the playground when they are hot and thirsty. If more people see my stand, more people will buy, and my revenue goes up. Named a specific decision: location. Explained why: more customers equals more revenue. Connected to profit: more revenue with same cost equals bigger profit."
+        >
+          I would set up near the playground instead of near the parking lot. More kids walk by the
+          playground when they are hot and thirsty. If more people see my stand, more people will
+          buy, and my revenue goes up.
           <div className="not-italic mt-2 text-[12px]">
-            Named a specific decision: location. Explained why: more customers = more revenue. Connected to profit: more
-            revenue with same cost = bigger profit.
+            Named a specific decision: location. Explained why: more customers = more revenue.
+            Connected to profit: more revenue with same cost = bigger profit.
           </div>
         </ExampleBox>
       )}
@@ -858,6 +1098,7 @@ function Step4({ stage, mode, get, setValue, flush }: any) {
 
       <TextField
         label="The one thing I would change:"
+        speak="The one thing I would change. Name a specific decision — not just say you would do better."
         rows={3}
         value={get(stage, "step4", "change")}
         onChange={(v) => setValue(stage, "step4", "change", v, { debounce: true })}
@@ -865,6 +1106,7 @@ function Step4({ stage, mode, get, setValue, flush }: any) {
       />
       <TextField
         label="Why that change would affect my profit:"
+        speak="Why that change would affect my profit. Explain exactly how your change connects to making more or less money."
         rows={4}
         value={get(stage, "step4", "why")}
         onChange={(v) => setValue(stage, "step4", "why", v, { debounce: true })}
@@ -879,7 +1121,12 @@ function Step4({ stage, mode, get, setValue, flush }: any) {
           ]}
           checked={[0, 1].map((i) => get(stage, "step4", `chk_${i}`) === "1")}
           onToggle={(i) =>
-            setValue(stage, "step4", `chk_${i}`, get(stage, "step4", `chk_${i}`) === "1" ? "0" : "1")
+            setValue(
+              stage,
+              "step4",
+              `chk_${i}`,
+              get(stage, "step4", `chk_${i}`) === "1" ? "0" : "1"
+            )
           }
         />
       )}
