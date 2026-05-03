@@ -1291,19 +1291,72 @@ function buildSummary(stage: number, scenario: Scenario, get: any) {
   const allMade = scenario.decisions.every((d) => get(stage, "step1", d.id));
   const outcome = allMade ? calcOutcome(scenario, decisionMap) : null;
 
-  let revenue = 0;
-  if (outcome?.type === "single") revenue = outcome.revenue;
-  else if (outcome?.type === "dual") revenue = outcome.revenue;
-  const profit = revenue - tCost;
+  const storedRevAnswer = parseFloat(get(stage, "step2", "revenue_answer") || "NaN");
+  const storedCostAnswer = parseFloat(get(stage, "step2", "total_cost_answer") || "NaN");
+  const storedProfitAnswer = parseFloat(get(stage, "step2", "profit_answer") || "NaN");
+
+  const correctRevenue = outcome?.revenue ?? 0;
+  const revenueOk = !isNaN(storedRevAnswer) && storedRevAnswer === correctRevenue;
+  const costOk = !isNaN(storedCostAnswer) && storedCostAnswer === tCost;
+  const profitOk = !isNaN(storedProfitAnswer) && outcome
+    ? storedProfitAnswer === outcome.revenue - tCost
+    : false;
+
+  const checkMark = (ok: boolean) => (
+    <span className={`font-bold ${ok ? "text-[hsl(var(--success))]" : "text-red-600"}`}>
+      {ok ? "✓ Correct" : "✗ Incorrect"}
+    </span>
+  );
 
   return (
-    <div className="space-y-3 text-[13px]">
-      <div>
-        <span className="font-bold">Scenario:</span> {scenario.name}
+    <div className="space-y-4 text-[13px]">
+      <div className="font-bold text-navy">
+        Scenario: {scenario.name}
       </div>
 
-      <div>
-        <div className="font-bold mb-1">Decisions Made:</div>
+      {/* Math -- auto-verified */}
+      <div className="border rounded-md p-3 bg-white">
+        <div className="font-bold text-navy mb-2">
+          MATH — Auto-Verified by System
+        </div>
+        <div className="space-y-2">
+          <div>
+            <div>
+              Revenue: {outcome ? `${outcome.unitsSold} × $${outcome.price}` : "—"} ={" "}
+              <span className="font-bold">${correctRevenue}</span>
+            </div>
+            <div className="flex gap-2 text-[12px]">
+              <span>Student typed: ${isNaN(storedRevAnswer) ? "—" : storedRevAnswer}</span>
+              {checkMark(revenueOk)}
+            </div>
+          </div>
+          <div>
+            <div>
+              Total Cost = <span className="font-bold">${tCost}</span>
+            </div>
+            <div className="flex gap-2 text-[12px]">
+              <span>Student typed: ${isNaN(storedCostAnswer) ? "—" : storedCostAnswer}</span>
+              {checkMark(costOk)}
+            </div>
+          </div>
+          <div>
+            <div>
+              Profit = ${correctRevenue} − ${tCost} ={" "}
+              <span className="font-bold">${outcome ? outcome.revenue - tCost : 0}</span>
+            </div>
+            <div className="flex gap-2 text-[12px]">
+              <span>Student typed: ${isNaN(storedProfitAnswer) ? "—" : storedProfitAnswer}</span>
+              {checkMark(profitOk)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Decisions */}
+      <div className="border rounded-md p-3 bg-white">
+        <div className="font-bold text-navy mb-2">
+          DECISIONS AND REASONING
+        </div>
         {scenario.decisions.map((d) => {
           const chosenKey = get(stage, "step1", d.id);
           const chosenOption = d.options.find((o) => o.key === chosenKey);
@@ -1312,56 +1365,56 @@ function buildSummary(stage: number, scenario: Scenario, get: any) {
             <div key={d.id} className="ml-2 mb-2">
               <div className="font-semibold">{d.question}</div>
               <div>Chose: {chosenOption?.label || "—"}</div>
-              {decText && <div className="italic text-muted-foreground">"{decText}"</div>}
+              {decText && (
+                <div className="text-muted-foreground">
+                  "{decText}"
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {outcome && (
-        <div>
-          <div className="font-bold mb-1">Results:</div>
-          {outcome.type === "single" ? (
-            <div>{outcome.unitsSold} {scenario.unitLabel} sold</div>
-          ) : (
-            <div>{outcome.bookmarksSold} bookmarks and {outcome.cardsSold} cards sold</div>
-          )}
+      {/* Strategy */}
+      <div className="border rounded-md p-3 bg-white">
+        <div className="font-bold text-navy mb-2">
+          STRATEGY
         </div>
-      )}
-
-      <div>
-        <div className="font-bold mb-1">Math:</div>
-        {outcome?.type === "single" ? (
-          <div>{outcome.unitsSold} sold × ${outcome.price} = ${revenue} revenue</div>
-        ) : outcome?.type === "dual" ? (
-          <div>{outcome.bookmarksSold} bookmarks × $1 + {outcome.cardsSold} cards × $2 = ${revenue} revenue</div>
-        ) : null}
-        <div>Cost: ${tCost}</div>
-        <div>
-          Profit: ${revenue} − ${tCost} ={" "}
-          <span className="font-bold">${profit}</span>
+        <div className="text-[12px] text-muted-foreground mb-2">
+          Guide checks: Does this name a specific decision? Does it explain how profit is affected?
+        </div>
+        <div className="space-y-2">
+          <div>
+            <div className="font-semibold">The one thing they would change:</div>
+            <div>{get(stage, "step4", "change") || "—"}</div>
+          </div>
+          <div>
+            <div className="font-semibold">Why it affects profit:</div>
+            <div>{get(stage, "step4", "why") || "—"}</div>
+          </div>
         </div>
       </div>
 
-      <div>
-        <div className="font-bold">
-          Principle 1 — {get(stage, "step3", "p1") || "not selected"}:
+      {/* Principles */}
+      <div className="border rounded-md p-3 bg-white">
+        <div className="font-bold text-navy mb-2">
+          PRINCIPLES
         </div>
-        <div>{get(stage, "step3", "p1_text") || "—"}</div>
-      </div>
-
-      <div>
-        <div className="font-bold">
-          Principle 2 — {get(stage, "step3", "p2") || "not selected"}:
+        <div className="text-[12px] text-muted-foreground mb-2">
+          Guide checks: Are these in the student's own words — not copied definitions?
         </div>
-        <div>{get(stage, "step3", "p2_text") || "—"}</div>
-      </div>
-
-      <div>
-        <div className="font-bold">Strategy — What they would change:</div>
-        <div>{get(stage, "step4", "change") || "—"}</div>
-        <div className="font-bold mt-1">Why it affects profit:</div>
-        <div>{get(stage, "step4", "why") || "—"}</div>
+        {[1, 2].map((n) => {
+          const principle = get(stage, "step3", `p${n}`);
+          const explanation = get(stage, "step3", `p${n}_text`);
+          return (
+            <div key={n} className="ml-2 mb-2">
+              <div className="font-semibold">
+                Principle {n} — {principle || "not selected"}
+              </div>
+              <div>{explanation || "—"}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
