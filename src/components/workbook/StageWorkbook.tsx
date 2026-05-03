@@ -1170,25 +1170,35 @@ function StageFooter({ stage, stageComplete, scenario, get, setValue, unlock, as
         open={openSign}
         onOpenChange={setOpenSign}
         title="Guide Sign-Off — Stage 3 Demonstration"
-        intro="Review the student's work below, ask the four questions out loud, then complete the checklist."
+        intro="Ask all four questions out loud first. Then review the student's written work. Then complete the checklist and enter the PIN."
         summary={
           <>
+            <div className="border rounded-md p-3 bg-white mb-3">
+              <div className="font-bold text-navy mb-2">
+                STEP 1 — ASK THESE FOUR QUESTIONS OUT LOUD
+              </div>
+              <div className="text-[12px] text-muted-foreground mb-2">
+                Listen for real thinking. The student should answer without reading from the screen.
+              </div>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Walk me through how you figured out your profit.</li>
+                <li>What was one decision you made and why did you make it?</li>
+                <li>If you ran this scenario again, what is one thing you would change and how would it affect your profit?</li>
+                <li>Pick one principle you wrote down and tell me how you actually used it — not what it means, what you did.</li>
+              </ol>
+            </div>
+            <div className="font-bold text-navy mb-2">
+              STEP 2 — REVIEW WRITTEN WORK
+            </div>
             {summary}
-            <hr className="gold-rule my-3" />
-            <div className="font-bold text-navy">ASK THESE QUESTIONS OUT LOUD — listen for real thinking, not memorized answers.</div>
-            <ol className="list-decimal pl-5 mt-2 space-y-1">
-              <li>Walk me through how you figured out your profit.</li>
-              <li>What was one decision you made and why did you make it?</li>
-              <li>If you ran this scenario again, what is one thing you would change and how would it affect your profit?</li>
-              <li>Pick one principle you wrote down and tell me how you actually used it — not what it means, what you did.</li>
-            </ol>
           </>
         }
         checklist={[
-          "Math is correct — revenue, cost, and profit calculations are right",
-          "Strategy names a specific decision and explains how it would affect profit — not just \"do better\"",
-          "Two principles are named and explained in the student's own words — not copied definitions",
-          "Student answered all four conversation questions out loud without reading from the screen",
+          "Math: Revenue, Cost, and Profit are all marked Correct above",
+          "Strategy: names a specific decision and explains profit impact — not just 'do better'",
+          "Principle 1: explained in student's own words — not a copied definition",
+          "Principle 2: explained in student's own words — not a copied definition",
+          "Student answered all four questions out loud without reading from the screen",
         ]}
         showFail
         onPass={async () => {
