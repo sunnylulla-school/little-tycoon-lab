@@ -293,12 +293,12 @@ function PickPage({ stage, get, setValue }: any) {
     <div>
       <StepBar step={0} title="Pick Your Scenario" />
       <p className="body-text mb-4">
-        You are going to run one of four simulated business scenarios. Each one asks you to make real decisions — where to
+        You are going to run one of three simulated business scenarios. Each one asks you to make real decisions — where to
         set up, how much to make, whether to offer a deal. Your decisions affect your results. Pick one. You will use this
         same scenario for all of Stage 1.
       </p>
       <div className="grid sm:grid-cols-2 gap-3 mt-4">
-        {SCENARIOS.map((s) => {
+        {SCENARIOS.filter((s) => s.id !== 1).map((s) => {
           const isSel = String(s.id) === selected;
           return (
             <button

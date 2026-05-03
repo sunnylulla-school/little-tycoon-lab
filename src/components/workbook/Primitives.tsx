@@ -37,7 +37,7 @@ export const ExampleBox = ({
   label,
   name,
   children,
-  defaultOpen = false,
+  defaultOpen = true,
 }: {
   label: string;
   name: string;
