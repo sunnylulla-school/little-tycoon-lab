@@ -93,9 +93,8 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
     if (p === "step1") {
       const decisionsOk = scenario.decisions.every((d) => isSelectComplete(get(stage, "step1", d.id)));
       const perDecText = scenario.decisions.every((d) => isTextComplete(get(stage, "step1", `dec_text_${d.id}`)));
-      const res = isTextComplete(get(stage, "step1", "results_text"));
       const checks = skipChecks || [0, 1, 2].every((i) => get(stage, "step1", `chk_${i}`) === "1");
-      return decisionsOk && perDecText && res && checks;
+      return decisionsOk && perDecText && checks;
     }
     if (p === "step2") {
       const revOk =
