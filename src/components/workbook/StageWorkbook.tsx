@@ -577,18 +577,20 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
         </div>
       )}
 
-      <CheckBox
-        items={[
-          "I calculated my Revenue — number sold times price.",
-          "I confirmed my Cost by reviewing every item.",
-          "I calculated my Profit — Revenue minus Cost.",
-          "If my profit is negative I understand why that happened.",
-        ]}
-        checked={[0, 1, 2, 3].map((i) => get(stage, "step2", `chk_${i}`) === "1")}
-        onToggle={(i) =>
-          setValue(stage, "step2", `chk_${i}`, get(stage, "step2", `chk_${i}`) === "1" ? "0" : "1")
-        }
-      />
+      {stage !== 1 && (
+        <CheckBox
+          items={[
+            "I calculated my Revenue — number sold times price.",
+            "I confirmed my Cost by reviewing every item.",
+            "I calculated my Profit — Revenue minus Cost.",
+            "If my profit is negative I understand why that happened.",
+          ]}
+          checked={[0, 1, 2, 3].map((i) => get(stage, "step2", `chk_${i}`) === "1")}
+          onToggle={(i) =>
+            setValue(stage, "step2", `chk_${i}`, get(stage, "step2", `chk_${i}`) === "1" ? "0" : "1")
+          }
+        />
+      )}
     </div>
   );
 }
