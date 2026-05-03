@@ -55,7 +55,6 @@ export const ExampleBox = ({
   label,
   name,
   children,
-  defaultOpen = true,
   speak,
 }: {
   label: string;
@@ -64,26 +63,16 @@ export const ExampleBox = ({
   defaultOpen?: boolean;
   speak?: string;
 }) => {
-  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="example-box my-4">
       <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          className="flex items-center gap-2 text-left flex-1"
-          onClick={() => setOpen((o) => !o)}
-        >
-          {open ? <ChevronDown className="w-4 h-4 text-gold" /> : <ChevronRight className="w-4 h-4 text-gold" />}
-          <span className="example-label">{label}</span>
-        </button>
+        <span className="example-label">{label}</span>
         {speak && <SpeakButton text={speak} />}
       </div>
-      {open && (
-        <div className="mt-3">
-          <div className="example-name mb-1">{name}</div>
-          <div className="example-content">{children}</div>
-        </div>
-      )}
+      <div className="mt-3">
+        <div className="example-name mb-1">{name}</div>
+        <div className="example-content">{children}</div>
+      </div>
     </div>
   );
 };

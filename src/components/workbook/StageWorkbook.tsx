@@ -18,6 +18,7 @@ import {
   SidebarBox,
   StepBar,
 } from "./Primitives";
+import { SpeakButton } from "@/components/SpeakButton";
 import { Button } from "@/components/ui/button";
 import { GuideSignOffModal } from "@/components/GuideSignOffModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -88,31 +89,32 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
     if (p === "intro") return get(stage, "intro", "scrolled") === "1";
     if (p === "pick") return isSelectComplete(get(stage, "pick", "scenario"));
     if (!scenario) return false;
+    const skipChecks = stage === 1;
     if (p === "step1") {
       const decisionsOk = scenario.decisions.every((d) => isSelectComplete(get(stage, "step1", d.id)));
-      const dec = isTextComplete(get(stage, "step1", "decisions_text"));
+      const perDecText = scenario.decisions.every((d) => isTextComplete(get(stage, "step1", `dec_text_${d.id}`)));
       const res = isTextComplete(get(stage, "step1", "results_text"));
-      const checks = [0, 1, 2].every((i) => get(stage, "step1", `chk_${i}`) === "1");
-      return decisionsOk && dec && res && checks;
+      const checks = skipChecks || [0, 1, 2].every((i) => get(stage, "step1", `chk_${i}`) === "1");
+      return decisionsOk && perDecText && res && checks;
     }
     if (p === "step2") {
       const revOk =
         scenario.productType === "single"
           ? isNumComplete(get(stage, "step2", "qty"))
           : isNumComplete(get(stage, "step2", "qty_b")) && isNumComplete(get(stage, "step2", "qty_c"));
-      const checks = [0, 1, 2, 3].every((i) => get(stage, "step2", `chk_${i}`) === "1");
+      const checks = skipChecks || [0, 1, 2, 3].every((i) => get(stage, "step2", `chk_${i}`) === "1");
       return revOk && checks;
     }
     if (p === "step3") {
       const p1 = isSelectComplete(get(stage, "step3", "p1")) && isTextComplete(get(stage, "step3", "p1_text"));
       const p2 = isSelectComplete(get(stage, "step3", "p2")) && isTextComplete(get(stage, "step3", "p2_text"));
-      const checks = [0, 1, 2].every((i) => get(stage, "step3", `chk_${i}`) === "1");
+      const checks = skipChecks || [0, 1, 2].every((i) => get(stage, "step3", `chk_${i}`) === "1");
       return p1 && p2 && checks;
     }
     if (p === "step4") {
       const t1 = isTextComplete(get(stage, "step4", "change"));
       const t2 = isTextComplete(get(stage, "step4", "why"));
-      const checks = [0, 1].every((i) => get(stage, "step4", `chk_${i}`) === "1");
+      const checks = skipChecks || [0, 1].every((i) => get(stage, "step4", `chk_${i}`) === "1");
       return t1 && t2 && checks;
     }
     return false;
@@ -327,30 +329,52 @@ function ScenarioSetup({ scenario }: { scenario: Scenario }) {
 }
 
 function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
-  const decisionKeys = scenario.decisions.map((d: any) => d.id);
-  const allChosen = decisionKeys.every((k: string) => isSelectComplete(get(stage, "step1", k)));
-  const lockedAfterAll = allChosen;
+  const marcusForIndex = (i: number) => {
+    const examples = [
+      {
+        label: "MARCUS'S EXAMPLE — How many to make",
+        body:
+          "I made 15 cups because I thought that was enough for a hot Saturday at the park without wasting money on extras. If I made too many, leftover lemonade would be wasted. If I made too few, I might run out before customers came.",
+      },
+      {
+        label: "MARCUS'S EXAMPLE — Where to set up",
+        body:
+          "I set up near the playground because that is where the most kids would be on a hot day. Kids playing outside get thirsty. Picking the right spot means more customers walk by my stand.",
+      },
+      {
+        label: "MARCUS'S EXAMPLE — Offering a deal",
+        body:
+          "I did not offer a deal because one dollar a cup was already a fair price. If I lowered the price too much, I would not have enough money left to call it a profit.",
+      },
+    ];
+    return examples[i] || examples[examples.length - 1];
+  };
 
   return (
     <div>
       <StepBar step={1} title="Run It" />
       {mode === "guided" && (
-        <p className="body-text mb-4">
-          Open your Business Scenario Set and find your scenario. Read the setup. Then circle one choice for each decision on
-          the printed sheet. Write down your choices and why you made them below before you look at your results.
-        </p>
+        <ReadableParagraph>
+          {`Read the setup. Then for each decision, choose one option and explain why you made that choice. After each one, you can see how Marcus thought about a similar decision in his lemonade stand.`}
+        </ReadableParagraph>
       )}
       <ScenarioSetup scenario={scenario} />
 
-      <ActivityHeading>Activity 1 — Your Decisions</ActivityHeading>
-      <div className="space-y-4">
-        {scenario.decisions.map((d: any) => {
+      <ActivityHeading speak="Activity 1. Your decisions. Answer each question one at a time.">
+        Activity 1 — Your Decisions
+      </ActivityHeading>
+
+      <div className="space-y-6">
+        {scenario.decisions.map((d: any, i: number) => {
           const sel = get(stage, "step1", d.id);
+          const decTextKey = `dec_text_${d.id}`;
+          const ex = marcusForIndex(i);
           return (
-            <div key={d.id}>
-              <div className="text-[14px] font-bold text-navy mb-2 flex items-center">
-                {d.question}
-                <FieldCheck ok={isSelectComplete(sel)} />
+            <div key={d.id} className="border rounded-md p-4 bg-white">
+              <div className="text-[14px] font-bold text-navy mb-2 flex items-center gap-2">
+                <span>Question {i + 1}: {d.question}</span>
+                <SpeakButton text={`Question ${i + 1}. ${d.question}`} />
+                <FieldCheck ok={isSelectComplete(sel) && isTextComplete(get(stage, "step1", decTextKey))} />
               </div>
               <div className="grid sm:grid-cols-3 gap-2">
                 {d.options.map((o: any) => {
@@ -366,33 +390,27 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
                   );
                 })}
               </div>
+
+              <div className="mt-4">
+                <TextField
+                  label="Which decision did you choose, and why?"
+                  rows={3}
+                  value={get(stage, "step1", decTextKey)}
+                  onChange={(v) => setValue(stage, "step1", decTextKey, v, { debounce: true })}
+                  onBlur={() => flush(stage, "step1", decTextKey)}
+                />
+              </div>
+
+              {mode === "guided" && (
+                <ExampleBox label={ex.label} name="Marcus T., Grade 3" speak={ex.body}>
+                  {ex.body}
+                </ExampleBox>
+              )}
             </div>
           );
         })}
       </div>
 
-      {mode === "guided" && (
-        <ExampleBox label="MARCUS'S EXAMPLE — Lemonade Stand" name="Marcus T., Grade 3">
-          I chose to set up near the playground because that is where the most kids would be on a hot day. I made 15 cups
-          because I thought that was enough without wasting money on extras. I did not offer a deal because my price was
-          already fair.
-          <div className="not-italic mt-2 text-[12px]">
-            <div>Decision 1: Near the playground — more customers.</div>
-            <div>Decision 2: 15 cups — not too many, not too few.</div>
-            <div>Decision 3: No deal — price was already fair.</div>
-          </div>
-        </ExampleBox>
-      )}
-
-      {mode === "guided" && <NowYouTry />}
-
-      <TextField
-        label={`MY DECISIONS — What did I choose and why?`}
-        rows={6}
-        value={get(stage, "step1", "decisions_text")}
-        onChange={(v) => setValue(stage, "step1", "decisions_text", v, { debounce: true })}
-        onBlur={() => flush(stage, "step1", "decisions_text")}
-      />
       <TextField
         label={
           scenario.id === 4
@@ -403,18 +421,6 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
         value={get(stage, "step1", "results_text")}
         onChange={(v) => setValue(stage, "step1", "results_text", v, { debounce: true })}
         onBlur={() => flush(stage, "step1", "results_text")}
-      />
-
-      <CheckBox
-        items={[
-          "I circled one choice for every decision in my scenario.",
-          "I wrote down my choices and a reason for each one.",
-          "I recorded my results.",
-        ]}
-        checked={[0, 1, 2].map((i) => get(stage, "step1", `chk_${i}`) === "1")}
-        onToggle={(i) =>
-          setValue(stage, "step1", `chk_${i}`, get(stage, "step1", `chk_${i}`) === "1" ? "0" : "1")
-        }
       />
     </div>
   );
@@ -571,18 +577,20 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
         </div>
       )}
 
-      <CheckBox
-        items={[
-          "I calculated my Revenue — number sold times price.",
-          "I confirmed my Cost by reviewing every item.",
-          "I calculated my Profit — Revenue minus Cost.",
-          "If my profit is negative I understand why that happened.",
-        ]}
-        checked={[0, 1, 2, 3].map((i) => get(stage, "step2", `chk_${i}`) === "1")}
-        onToggle={(i) =>
-          setValue(stage, "step2", `chk_${i}`, get(stage, "step2", `chk_${i}`) === "1" ? "0" : "1")
-        }
-      />
+      {stage !== 1 && (
+        <CheckBox
+          items={[
+            "I calculated my Revenue — number sold times price.",
+            "I confirmed my Cost by reviewing every item.",
+            "I calculated my Profit — Revenue minus Cost.",
+            "If my profit is negative I understand why that happened.",
+          ]}
+          checked={[0, 1, 2, 3].map((i) => get(stage, "step2", `chk_${i}`) === "1")}
+          onToggle={(i) =>
+            setValue(stage, "step2", `chk_${i}`, get(stage, "step2", `chk_${i}`) === "1" ? "0" : "1")
+          }
+        />
+      )}
     </div>
   );
 }
@@ -632,17 +640,19 @@ function Step3({ stage, mode, get, setValue, flush }: any) {
         onBlur={() => flush(stage, "step3", "p2_text")}
       />
 
-      <CheckBox
-        items={[
-          "I named two different principles from the list.",
-          "I explained what each one means in my own words.",
-          "I connected each one to something I actually did — not just the definition.",
-        ]}
-        checked={[0, 1, 2].map((i) => get(stage, "step3", `chk_${i}`) === "1")}
-        onToggle={(i) =>
-          setValue(stage, "step3", `chk_${i}`, get(stage, "step3", `chk_${i}`) === "1" ? "0" : "1")
-        }
-      />
+      {stage !== 1 && (
+        <CheckBox
+          items={[
+            "I named two different principles from the list.",
+            "I explained what each one means in my own words.",
+            "I connected each one to something I actually did — not just the definition.",
+          ]}
+          checked={[0, 1, 2].map((i) => get(stage, "step3", `chk_${i}`) === "1")}
+          onToggle={(i) =>
+            setValue(stage, "step3", `chk_${i}`, get(stage, "step3", `chk_${i}`) === "1" ? "0" : "1")
+          }
+        />
+      )}
     </div>
   );
 }
@@ -725,16 +735,18 @@ function Step4({ stage, mode, get, setValue, flush }: any) {
         onBlur={() => flush(stage, "step4", "why")}
       />
 
-      <CheckBox
-        items={[
-          'I named one specific thing I would change — not just "do better."',
-          "I explained exactly how that change would affect my profit.",
-        ]}
-        checked={[0, 1].map((i) => get(stage, "step4", `chk_${i}`) === "1")}
-        onToggle={(i) =>
-          setValue(stage, "step4", `chk_${i}`, get(stage, "step4", `chk_${i}`) === "1" ? "0" : "1")
-        }
-      />
+      {stage !== 1 && (
+        <CheckBox
+          items={[
+            'I named one specific thing I would change — not just "do better."',
+            "I explained exactly how that change would affect my profit.",
+          ]}
+          checked={[0, 1].map((i) => get(stage, "step4", `chk_${i}`) === "1")}
+          onToggle={(i) =>
+            setValue(stage, "step4", `chk_${i}`, get(stage, "step4", `chk_${i}`) === "1" ? "0" : "1")
+          }
+        />
+      )}
     </div>
   );
 }
@@ -752,7 +764,7 @@ function StageFooter({ stage, stageComplete, scenario, get, setValue, unlock, as
   if (!stageComplete || !scenario) {
     return (
       <div className="mt-10 text-center text-[13px] text-muted-foreground">
-        Almost there — fill in every field and tick all the checkboxes to unlock guide sign-off.
+        Almost there — fill in every section to unlock guide sign-off.
       </div>
     );
   }
