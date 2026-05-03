@@ -1186,18 +1186,21 @@ function TextField({
   value,
   onChange,
   onBlur,
+  speak,
 }: {
   label: string;
   rows: number;
   value: string;
   onChange: (v: string) => void;
   onBlur?: () => void;
+  speak?: string;
 }) {
   const ok = isTextComplete(value);
   return (
     <div className="mt-4">
-      <label className="text-[12px] font-bold text-navy uppercase tracking-wide flex items-center">
+      <label className="text-[12px] font-bold text-navy uppercase tracking-wide flex items-center gap-2">
         {label}
+        {speak && <SpeakButton text={speak} />}
         <FieldCheck ok={ok} />
       </label>
       <textarea
