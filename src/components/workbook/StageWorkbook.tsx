@@ -328,6 +328,16 @@ function ScenarioSetup({ scenario }: { scenario: Scenario }) {
 }
 
 function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
+  const allDecisionsMade = scenario.decisions.every(
+    (d: any) => get(stage, "step1", d.id)
+  );
+
+  const decisionMap = Object.fromEntries(
+    scenario.decisions.map((d: any) => [d.id, get(stage, "step1", d.id)])
+  ) as Record<string, "A" | "B" | "C">;
+
+  const outcome = allDecisionsMade ? calcOutcome(scenario, decisionMap) : null;
+
   const marcusForIndex = (i: number) => {
     const examples = [
       {
