@@ -60,8 +60,8 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
           .eq("student_id", student.id);
         (atts || []).forEach((a: any) => used.add(a.scenario_id));
       }
-      const remaining = SCENARIOS.filter((s) => !used.has(s.id));
-      const pool = remaining.length > 0 ? remaining : SCENARIOS;
+      const remaining = SCENARIOS.filter((s) => s.id !== 1 && !used.has(s.id));
+      const pool = remaining.length > 0 ? remaining : SCENARIOS.filter((s) => s.id !== 1);
       const pick = pool[Math.floor(Math.random() * pool.length)];
       await assign(pick.id);
     })();
