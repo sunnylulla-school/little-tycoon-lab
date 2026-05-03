@@ -225,20 +225,20 @@ function IntroPage({ stage, get, setValue, onContinue }: any) {
   }, [ready, alreadyDone]);
 
 
+  const introP1 = "An entrepreneur is someone who starts and runs a business. They notice a problem, come up with an idea, and then make decisions every single day to make it work. Running a lemonade stand, a bake sale, or a car wash — those are all things entrepreneurs do.";
+  const introP2 = "Every business decision has a money result. Smart entrepreneurs think about that before they choose. That is exactly what you are going to practice.";
+  const sidebar1 = "The three things every entrepreneur has to understand. Where their money comes from, that is called Revenue. What they spent to run the business, that is called Cost. What they actually get to keep, that is called Profit.";
+  const basicsP = "You do not need to memorize a long list. You just need to understand five ideas well enough to spot them when you are running your own scenario. Read through Marcus's story below — all five ideas show up in it.";
+  const marcusStory = "It was a hot Saturday at the park. Marcus set up a lemonade stand. He spent eight dollars buying lemons, sugar, cups, and a sign before he sold a single cup. That eight dollars was his Cost — money he had to spend just to get started. He charged one dollar per cup and sold twelve cups. That brought in twelve dollars. That twelve dollars was his Revenue — all the money that came in. He took the twelve dollars he made and subtracted the eight dollars he spent. Twelve minus eight equals four. That four dollars was his Profit — what he actually got to keep. Marcus set up near the playground because that is where thirsty kids were. He was thinking about his Customer — who is buying, and what do they want? After it was over, Marcus thought: next time I would set up earlier in the day when more people are outside. That kind of thinking is called Strategy — making a plan to get a better result.";
+  const fiveIdeas = "The five ideas in plain English. Revenue: all the money you brought in from selling. Cost: all the money you spent before you sold anything. Profit: what you keep. Profit equals Revenue minus Cost. Customer: the person buying from you. Think about what they want. Strategy: a deliberate plan to get a better result next time.";
+
   return (
     <div>
       <Overline>BEFORE YOU BEGIN</Overline>
-      <SectionHeading>What Is an Entrepreneur?</SectionHeading>
-      <p className="body-text mb-4">
-        An entrepreneur is someone who starts and runs a business. They notice a problem, come up with an idea, and then make
-        decisions every single day to make it work. Running a lemonade stand, a bake sale, or a car wash — those are all
-        things entrepreneurs do.
-      </p>
-      <p className="body-text mb-4">
-        Every business decision has a money result. Smart entrepreneurs think about that before they choose. That is exactly
-        what you are going to practice.
-      </p>
-      <SidebarBox title="The three things every entrepreneur has to understand">
+      <SectionHeading speak="What is an entrepreneur?">What Is an Entrepreneur?</SectionHeading>
+      <ReadableParagraph>{introP1}</ReadableParagraph>
+      <ReadableParagraph>{introP2}</ReadableParagraph>
+      <SidebarBox title="The three things every entrepreneur has to understand" speak={sidebar1}>
         <ul className="list-disc pl-5 space-y-1">
           <li>Where their money comes from — that is called Revenue.</li>
           <li>What they spent to run the business — that is called Cost.</li>
@@ -248,23 +248,13 @@ function IntroPage({ stage, get, setValue, onContinue }: any) {
 
       <div className="mt-8">
         <Overline>THE BASICS</Overline>
-        <SectionHeading>Five Ideas to Know</SectionHeading>
-        <p className="body-text mb-4">
-          You do not need to memorize a long list. You just need to understand five ideas well enough to spot them when you
-          are running your own scenario. Read through Marcus's story below — all five ideas show up in it.
-        </p>
-        <ExampleBox label="MARCUS'S STORY — Lemonade Stand" name="Marcus T., Grade 3">
-          It was a hot Saturday at the park. Marcus set up a lemonade stand. He spent $8 buying lemons, sugar, cups, and a
-          sign before he sold a single cup. That $8 was his Cost — money he had to spend just to get started. He charged $1
-          per cup and sold 12 cups. That brought in $12. That $12 was his Revenue — all the money that came in. He took the
-          $12 he made and subtracted the $8 he spent. $12 minus $8 equals $4. That $4 was his Profit — what he actually got
-          to keep. Marcus set up near the playground because that is where thirsty kids were. He was thinking about his
-          Customer — who is buying, and what do they want? After it was over, Marcus thought: next time I would set up
-          earlier in the day when more people are outside. That kind of thinking is called Strategy — making a plan to get a
-          better result.
+        <SectionHeading speak="Five ideas to know.">Five Ideas to Know</SectionHeading>
+        <ReadableParagraph>{basicsP}</ReadableParagraph>
+        <ExampleBox label="MARCUS'S STORY — Lemonade Stand" name="Marcus T., Grade 3" speak={marcusStory}>
+          {marcusStory}
         </ExampleBox>
 
-        <SidebarBox title="The five ideas — in plain English">
+        <SidebarBox title="The five ideas — in plain English" speak={fiveIdeas}>
           <ul className="list-disc pl-5 space-y-1">
             <li>Revenue — all the money you brought in from selling.</li>
             <li>Cost — all the money you spent before you sold anything.</li>
@@ -274,7 +264,7 @@ function IntroPage({ stage, get, setValue, onContinue }: any) {
           </ul>
         </SidebarBox>
 
-        <p className="body-text mt-4">You will see all five of these ideas show up when you run your own scenario. Keep this page open while you work.</p>
+        <ReadableParagraph>You will see all five of these ideas show up when you run your own scenario. Keep this page open while you work.</ReadableParagraph>
       </div>
 
       <div className="mt-8 text-center">
