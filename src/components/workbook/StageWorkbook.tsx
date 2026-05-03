@@ -453,6 +453,7 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
           Make all three decisions above to see your results.
         </div>
       )}
+    </div>
   );
 }
 
