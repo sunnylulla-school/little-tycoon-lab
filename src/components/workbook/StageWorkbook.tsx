@@ -198,11 +198,13 @@ function pageLabel(p: string) {
 /* ============== Pages ============== */
 
 function IntroPage({ stage, get, setValue, onContinue }: any) {
-  // Track 30 seconds + scroll to bottom to mark complete
+  // First time: require 30 sec + scroll. After that: always unlocked.
+  const alreadyDone = get(stage, "intro", "scrolled") === "1";
   const [seconds, setSeconds] = useState(0);
-  const [scrolled, setScrolled] = useState(get(stage, "intro", "scrolled") === "1");
+  const [scrolled, setScrolled] = useState(alreadyDone);
 
   useEffect(() => {
+    if (alreadyDone) return;
     const t = setInterval(() => setSeconds((s) => s + 1), 1000);
     const onScroll = () => {
       if (window.scrollY + window.innerHeight >= document.body.scrollHeight - 30) {
@@ -214,13 +216,14 @@ function IntroPage({ stage, get, setValue, onContinue }: any) {
       clearInterval(t);
       window.removeEventListener("scroll", onScroll);
     };
-  }, []);
+  }, [alreadyDone]);
 
-  const ready = seconds >= 30 && scrolled;
+  const ready = alreadyDone || (seconds >= 30 && scrolled);
 
   useEffect(() => {
-    if (ready && get(stage, "intro", "scrolled") !== "1") setValue(stage, "intro", "scrolled", "1");
-  }, [ready]);
+    if (ready && !alreadyDone) setValue(stage, "intro", "scrolled", "1");
+  }, [ready, alreadyDone]);
+
 
   return (
     <div>
