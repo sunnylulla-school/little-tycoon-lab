@@ -88,31 +88,32 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
     if (p === "intro") return get(stage, "intro", "scrolled") === "1";
     if (p === "pick") return isSelectComplete(get(stage, "pick", "scenario"));
     if (!scenario) return false;
+    const skipChecks = stage === 1;
     if (p === "step1") {
       const decisionsOk = scenario.decisions.every((d) => isSelectComplete(get(stage, "step1", d.id)));
-      const dec = isTextComplete(get(stage, "step1", "decisions_text"));
+      const perDecText = scenario.decisions.every((d) => isTextComplete(get(stage, "step1", `dec_text_${d.id}`)));
       const res = isTextComplete(get(stage, "step1", "results_text"));
-      const checks = [0, 1, 2].every((i) => get(stage, "step1", `chk_${i}`) === "1");
-      return decisionsOk && dec && res && checks;
+      const checks = skipChecks || [0, 1, 2].every((i) => get(stage, "step1", `chk_${i}`) === "1");
+      return decisionsOk && perDecText && res && checks;
     }
     if (p === "step2") {
       const revOk =
         scenario.productType === "single"
           ? isNumComplete(get(stage, "step2", "qty"))
           : isNumComplete(get(stage, "step2", "qty_b")) && isNumComplete(get(stage, "step2", "qty_c"));
-      const checks = [0, 1, 2, 3].every((i) => get(stage, "step2", `chk_${i}`) === "1");
+      const checks = skipChecks || [0, 1, 2, 3].every((i) => get(stage, "step2", `chk_${i}`) === "1");
       return revOk && checks;
     }
     if (p === "step3") {
       const p1 = isSelectComplete(get(stage, "step3", "p1")) && isTextComplete(get(stage, "step3", "p1_text"));
       const p2 = isSelectComplete(get(stage, "step3", "p2")) && isTextComplete(get(stage, "step3", "p2_text"));
-      const checks = [0, 1, 2].every((i) => get(stage, "step3", `chk_${i}`) === "1");
+      const checks = skipChecks || [0, 1, 2].every((i) => get(stage, "step3", `chk_${i}`) === "1");
       return p1 && p2 && checks;
     }
     if (p === "step4") {
       const t1 = isTextComplete(get(stage, "step4", "change"));
       const t2 = isTextComplete(get(stage, "step4", "why"));
-      const checks = [0, 1].every((i) => get(stage, "step4", `chk_${i}`) === "1");
+      const checks = skipChecks || [0, 1].every((i) => get(stage, "step4", `chk_${i}`) === "1");
       return t1 && t2 && checks;
     }
     return false;
