@@ -198,3 +198,83 @@ export type Principle = (typeof PRINCIPLES)[number];
 
 export const getScenario = (id: number) => SCENARIOS.find((s) => s.id === id)!;
 export const totalCost = (s: Scenario) => s.costItems.reduce((a, b) => a + b.amount, 0);
+
+export type DecisionPoints = Record<string, Record<"A" | "B" | "C", number>>;
+
+export const SCENARIO_POINTS: Record<number, DecisionPoints> = {
+  1: {
+    d1: { A: 1, B: 2, C: 0 },
+    d2: { A: 2, B: 0, C: 1 },
+    d3: { A: 1, B: 0, C: 2 },
+  },
+  2: {
+    d1: { A: 1, B: 2, C: 0 },
+    d2: { A: 1, B: 2, C: 0 },
+    d3: { A: 2, B: 0, C: 1 },
+  },
+  3: {
+    d1: { A: 1, B: 1, C: 2 },
+    d2: { A: 0, B: 2, C: 1 },
+    d3: { A: 1, B: 2, C: 0 },
+  },
+  4: {
+    d2: { A: 0, B: 2, C: 1 },
+    d3: { A: 1, B: 2, C: 0 },
+  } as DecisionPoints,
+};
+
+const UNITS_BY_POINTS: Record<number, number[]> = {
+  1: [4, 4, 8, 8, 12, 12, 15],
+  2: [5, 5, 10, 10, 18, 18, 24],
+  3: [2, 2, 4, 4, 6, 6, 8],
+};
+
+export const CAR_WASH_PRICES: Record<"A" | "B" | "C", number> = { A: 5, B: 7, C: 10 };
+
+const BOOKMARK_INVENTORY: Record<"A" | "B" | "C", { bookmarks: number; cards: number }> = {
+  A: { bookmarks: 20, cards: 5 },
+  B: { bookmarks: 5, cards: 20 },
+  C: { bookmarks: 12, cards: 12 },
+};
+const SELL_PCT_BY_POINTS = [0.3, 0.3, 0.6, 0.6, 1.0];
+
+export type OutcomeResult =
+  | { type: "single"; unitsSold: number; revenue: number; price: number }
+  | { type: "dual"; bookmarksSold: number; cardsSold: number; revenue: number };
+
+export function calcOutcome(
+  scenario: Scenario,
+  decisions: Record<string, "A" | "B" | "C">
+): OutcomeResult {
+  const points = SCENARIO_POINTS[scenario.id];
+
+  if (scenario.id === 4) {
+    const pts =
+      (points.d2?.[decisions.d2] ?? 0) +
+      (points.d3?.[decisions.d3] ?? 0);
+    const pct = SELL_PCT_BY_POINTS[Math.min(pts, 4)];
+    const inv = BOOKMARK_INVENTORY[decisions.d1] ?? { bookmarks: 12, cards: 12 };
+    const bookmarksSold = Math.floor(inv.bookmarks * pct);
+    const cardsSold = Math.floor(inv.cards * pct);
+    const revenue = bookmarksSold * 1 + cardsSold * 2;
+    return { type: "dual", bookmarksSold, cardsSold, revenue };
+  }
+
+  if (scenario.id === 3) {
+    const totalPts =
+      (points.d1?.[decisions.d1] ?? 0) +
+      (points.d2?.[decisions.d2] ?? 0) +
+      (points.d3?.[decisions.d3] ?? 0);
+    const unitsSold = UNITS_BY_POINTS[3][Math.min(totalPts, 6)];
+    const price = CAR_WASH_PRICES[decisions.d3] ?? 5;
+    return { type: "single", unitsSold, revenue: unitsSold * price, price };
+  }
+
+  const totalPts =
+    (points.d1?.[decisions.d1] ?? 0) +
+    (points.d2?.[decisions.d2] ?? 0) +
+    (points.d3?.[decisions.d3] ?? 0);
+  const unitsSold = UNITS_BY_POINTS[scenario.id][Math.min(totalPts, 6)];
+  const price = scenario.pricePerItem ?? 1;
+  return { type: "single", unitsSold, revenue: unitsSold * price, price };
+}

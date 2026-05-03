@@ -113,9 +113,19 @@ export const CheckBox = ({
   </div>
 );
 
-export const MathRow = ({ label, value, result }: { label: string; value: string; result?: boolean }) => (
-  <div className={`math-row ${result ? "math-row-result rounded-md" : ""}`}>
-    <span>{label}</span>
-    <span className="font-bold">{value}</span>
-  </div>
-);
+export function MathRow({ label, value, result }: { label: string; value: string; result?: boolean }) {
+  if (result) {
+    return (
+      <div className="math-row math-row-result rounded-md bg-navy text-white px-3 py-2 flex items-center justify-between border-2 border-gold mt-1">
+        <span className="font-bold uppercase tracking-wide">{label}</span>
+        <span className="font-bold text-[16px]">{value}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="math-row flex items-center justify-between px-3 py-2 border-b">
+      <span>{label}</span>
+      <span className="font-bold">{value}</span>
+    </div>
+  );
+}

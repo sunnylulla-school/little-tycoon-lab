@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAssignment, useProgress, useUnlocks } from "@/hooks/useProgress";
-import { SCENARIOS, getScenario, totalCost, PRINCIPLES, Scenario } from "@/lib/scenarios";
+import { SCENARIOS, getScenario, totalCost, PRINCIPLES, Scenario, calcOutcome, CAR_WASH_PRICES } from "@/lib/scenarios";
 import { isNumComplete, isSelectComplete, isTextComplete } from "@/lib/validators";
 import { GUIDE_PIN } from "@/config";
 import {
@@ -93,9 +93,8 @@ export const StageWorkbook = ({ stage, mode }: Props) => {
     if (p === "step1") {
       const decisionsOk = scenario.decisions.every((d) => isSelectComplete(get(stage, "step1", d.id)));
       const perDecText = scenario.decisions.every((d) => isTextComplete(get(stage, "step1", `dec_text_${d.id}`)));
-      const res = isTextComplete(get(stage, "step1", "results_text"));
       const checks = skipChecks || [0, 1, 2].every((i) => get(stage, "step1", `chk_${i}`) === "1");
-      return decisionsOk && perDecText && res && checks;
+      return decisionsOk && perDecText && checks;
     }
     if (p === "step2") {
       const revOk =
@@ -329,6 +328,16 @@ function ScenarioSetup({ scenario }: { scenario: Scenario }) {
 }
 
 function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
+  const allDecisionsMade = scenario.decisions.every(
+    (d: any) => get(stage, "step1", d.id)
+  );
+
+  const decisionMap = Object.fromEntries(
+    scenario.decisions.map((d: any) => [d.id, get(stage, "step1", d.id)])
+  ) as Record<string, "A" | "B" | "C">;
+
+  const outcome = allDecisionsMade ? calcOutcome(scenario, decisionMap) : null;
+
   const marcusForIndex = (i: number) => {
     const examples = [
       {
@@ -411,17 +420,39 @@ function Step1({ stage, mode, scenario, get, setValue, flush }: any) {
         })}
       </div>
 
-      <TextField
-        label={
-          scenario.id === 4
-            ? "MY RESULTS — How many bookmarks and how many cards did I sell?"
-            : "MY RESULTS — How many did I sell?"
-        }
-        rows={2}
-        value={get(stage, "step1", "results_text")}
-        onChange={(v) => setValue(stage, "step1", "results_text", v, { debounce: true })}
-        onBlur={() => flush(stage, "step1", "results_text")}
-      />
+      {allDecisionsMade && outcome ? (
+        <div className="mt-6 border-2 border-gold rounded-md p-4 bg-white">
+          <div className="overline mb-2">YOUR RESULTS</div>
+          <div className="text-[15px] text-[#222]">
+            {outcome.type === "single" ? (
+              <div>
+                <div className="font-bold text-navy text-[18px] mb-1">
+                  You sold {outcome.unitsSold} {scenario.unitLabel}.
+                </div>
+                <div className="text-[14px] text-muted-foreground">
+                  Based on your decisions, {outcome.unitsSold} {scenario.unitLabel} sold at ${outcome.price} each.
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="font-bold text-navy text-[18px] mb-1">
+                  You sold {outcome.bookmarksSold} bookmarks and {outcome.cardsSold} cards.
+                </div>
+                <div className="text-[14px] text-muted-foreground">
+                  Based on your decisions and your display choices.
+                </div>
+              </div>
+            )}
+            <div className="mt-3 text-[13px] text-navy font-bold">
+              Head to the Math step to calculate your revenue, cost, and profit.
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 text-[13px] text-muted-foreground italic">
+          Make all three decisions above to see your results.
+        </div>
+      )}
     </div>
   );
 }
@@ -466,10 +497,40 @@ function UnlockDecisions({ onUnlock }: { onUnlock: () => void }) {
 function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
   const tCost = totalCost(scenario);
 
+  const decisionMap2 = Object.fromEntries(
+    scenario.decisions.map((d: any) => [d.id, get(stage, "step1", d.id)])
+  ) as Record<string, "A" | "B" | "C">;
+
+  const allMade2 = scenario.decisions.every((d: any) => get(stage, "step1", d.id));
+  const prefilledOutcome = allMade2 ? calcOutcome(scenario, decisionMap2) : null;
+
+  // Pre-populate revenue qty fields from outcome if empty
+  useEffect(() => {
+    if (!prefilledOutcome) return;
+    if (prefilledOutcome.type === "single") {
+      if (!get(stage, "step2", "qty")) {
+        setValue(stage, "step2", "qty", String(prefilledOutcome.unitsSold));
+      }
+    } else {
+      if (!get(stage, "step2", "qty_b")) {
+        setValue(stage, "step2", "qty_b", String(prefilledOutcome.bookmarksSold));
+      }
+      if (!get(stage, "step2", "qty_c")) {
+        setValue(stage, "step2", "qty_c", String(prefilledOutcome.cardsSold));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefilledOutcome?.type]);
+
+  const singlePrice =
+    scenario.id === 3
+      ? CAR_WASH_PRICES[decisionMap2.d3] ?? 5
+      : scenario.pricePerItem || 0;
+
   let revenue = 0;
   if (scenario.productType === "single") {
     const q = parseFloat(get(stage, "step2", "qty")) || 0;
-    revenue = q * (scenario.pricePerItem || 0);
+    revenue = q * singlePrice;
   } else {
     const b = parseFloat(get(stage, "step2", "qty_b")) || 0;
     const c = parseFloat(get(stage, "step2", "qty_c")) || 0;
@@ -484,6 +545,24 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
         <p className="body-text mb-4">
           Every business decision has a money result. Now you are going to calculate yours. You may use a calculator for all of this.
         </p>
+      )}
+
+      {prefilledOutcome && (
+        <div className="border-2 border-gold rounded-md p-4 bg-white mb-4">
+          <div className="overline mb-2">YOUR RESULTS FROM STEP 1</div>
+          {prefilledOutcome.type === "single" ? (
+            <div className="text-[15px] font-bold text-navy">
+              You sold {prefilledOutcome.unitsSold} {scenario.unitLabel} at ${prefilledOutcome.price} each.
+            </div>
+          ) : (
+            <div className="text-[15px] font-bold text-navy">
+              You sold {prefilledOutcome.bookmarksSold} bookmarks and {prefilledOutcome.cardsSold} cards.
+            </div>
+          )}
+          <div className="text-[13px] text-muted-foreground mt-2">
+            Use these numbers in the revenue calculation below.
+          </div>
+        </div>
       )}
 
       <ActivityHeading>Activity 2 — Revenue</ActivityHeading>
@@ -505,16 +584,22 @@ function Step2({ stage, mode, scenario, get, setValue, flush }: any) {
 
       {scenario.productType === "single" ? (
         <div className="space-y-2">
+          <div className="text-[13px] text-muted-foreground italic">
+            Your result from Step 1 is pre-filled. The total calculates automatically.
+          </div>
           <NumberField
             label="How many did I sell?"
             value={get(stage, "step2", "qty")}
             onChange={(v) => setValue(stage, "step2", "qty", v)}
           />
-          <div className="text-[13px] text-muted-foreground">Price per item: ${scenario.pricePerItem}</div>
+          <div className="text-[13px] text-muted-foreground">Price per item: ${singlePrice}</div>
           <MathRow label="MY REVENUE" value={`$${revenue}`} result />
         </div>
       ) : (
         <div className="space-y-2">
+          <div className="text-[13px] text-muted-foreground italic">
+            Your results from Step 1 are pre-filled. The total calculates automatically.
+          </div>
           <NumberField
             label="How many bookmarks did I sell?"
             value={get(stage, "step2", "qty_b")}
@@ -936,27 +1021,84 @@ function collectFieldValues(stage: number, get: any) {
 
 function buildSummary(stage: number, scenario: Scenario, get: any) {
   const tCost = totalCost(scenario);
+  const decisionMap = Object.fromEntries(
+    scenario.decisions.map((d) => [d.id, get(stage, "step1", d.id)])
+  ) as Record<string, "A" | "B" | "C">;
+  const allMade = scenario.decisions.every((d) => get(stage, "step1", d.id));
+  const outcome = allMade ? calcOutcome(scenario, decisionMap) : null;
+
   let revenue = 0;
-  if (scenario.productType === "single") {
-    revenue = (parseFloat(get(stage, "step2", "qty")) || 0) * (scenario.pricePerItem || 0);
-  } else {
-    revenue = (parseFloat(get(stage, "step2", "qty_b")) || 0) * 1 + (parseFloat(get(stage, "step2", "qty_c")) || 0) * 2;
-  }
+  if (outcome?.type === "single") revenue = outcome.revenue;
+  else if (outcome?.type === "dual") revenue = outcome.revenue;
   const profit = revenue - tCost;
+
   return (
-    <div className="space-y-1.5">
-      <div><span className="font-bold">Scenario:</span> {scenario.name}</div>
+    <div className="space-y-3 text-[13px]">
       <div>
-        <span className="font-bold">Decisions:</span>{" "}
-        {scenario.decisions.map((d) => `${d.id.toUpperCase()}=${get(stage, "step1", d.id) || "—"}`).join(" · ")}
+        <span className="font-bold">Scenario:</span> {scenario.name}
       </div>
-      <div><span className="font-bold">Revenue:</span> ${revenue} · <span className="font-bold">Cost:</span> ${tCost} · <span className="font-bold">Profit:</span> ${profit}</div>
-      <div><span className="font-bold">Decision text:</span> {get(stage, "step1", "decisions_text")}</div>
-      <div><span className="font-bold">Results:</span> {get(stage, "step1", "results_text")}</div>
-      <div><span className="font-bold">Principle 1 ({get(stage, "step3", "p1")}):</span> {get(stage, "step3", "p1_text")}</div>
-      <div><span className="font-bold">Principle 2 ({get(stage, "step3", "p2")}):</span> {get(stage, "step3", "p2_text")}</div>
-      <div><span className="font-bold">Strategy change:</span> {get(stage, "step4", "change")}</div>
-      <div><span className="font-bold">Why it affects profit:</span> {get(stage, "step4", "why")}</div>
+
+      <div>
+        <div className="font-bold mb-1">Decisions Made:</div>
+        {scenario.decisions.map((d) => {
+          const chosenKey = get(stage, "step1", d.id);
+          const chosenOption = d.options.find((o) => o.key === chosenKey);
+          const decText = get(stage, "step1", `dec_text_${d.id}`);
+          return (
+            <div key={d.id} className="ml-2 mb-2">
+              <div className="font-semibold">{d.question}</div>
+              <div>Chose: {chosenOption?.label || "—"}</div>
+              {decText && <div className="italic text-muted-foreground">"{decText}"</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {outcome && (
+        <div>
+          <div className="font-bold mb-1">Results:</div>
+          {outcome.type === "single" ? (
+            <div>{outcome.unitsSold} {scenario.unitLabel} sold</div>
+          ) : (
+            <div>{outcome.bookmarksSold} bookmarks and {outcome.cardsSold} cards sold</div>
+          )}
+        </div>
+      )}
+
+      <div>
+        <div className="font-bold mb-1">Math:</div>
+        {outcome?.type === "single" ? (
+          <div>{outcome.unitsSold} sold × ${outcome.price} = ${revenue} revenue</div>
+        ) : outcome?.type === "dual" ? (
+          <div>{outcome.bookmarksSold} bookmarks × $1 + {outcome.cardsSold} cards × $2 = ${revenue} revenue</div>
+        ) : null}
+        <div>Cost: ${tCost}</div>
+        <div>
+          Profit: ${revenue} − ${tCost} ={" "}
+          <span className="font-bold">${profit}</span>
+        </div>
+      </div>
+
+      <div>
+        <div className="font-bold">
+          Principle 1 — {get(stage, "step3", "p1") || "not selected"}:
+        </div>
+        <div>{get(stage, "step3", "p1_text") || "—"}</div>
+      </div>
+
+      <div>
+        <div className="font-bold">
+          Principle 2 — {get(stage, "step3", "p2") || "not selected"}:
+        </div>
+        <div>{get(stage, "step3", "p2_text") || "—"}</div>
+      </div>
+
+      <div>
+        <div className="font-bold">Strategy — What they would change:</div>
+        <div>{get(stage, "step4", "change") || "—"}</div>
+        <div className="font-bold mt-1">Why it affects profit:</div>
+        <div>{get(stage, "step4", "why") || "—"}</div>
+      </div>
     </div>
   );
 }
